@@ -1,0 +1,77 @@
+# Tistory Multi-Blog Publisher Configuration
+app:
+  name: "Tistory Multi-Blog Auto Publisher"
+  version: "1.0.0"
+  log_level: "INFO"
+
+# 5개 블로그 및 각 블로그별 2개 테마 (총 10개 테마)
+# subdomain에는 본인의 티스토리 주소 앞부분을 입력합니다 (예: https://myblog.tistory.com -> myblog)
+blogs:
+  - id: "blog_1"
+    name: "IT & 테크 트렌드"
+    subdomain: "blog1_subdomain"
+    themes:
+      - name: "AI 및 생산성 도구 가이드"
+        keywords: ["생성형 AI 활용", "업무 자동화 툴", "ChatGPT 프롬프트", "Gemini 팁", "무료 AI", "노션 활용법"]
+      - name: "소프트웨어 및 IT 기기 리뷰/추천"
+        keywords: ["생산성 앱 추천", "맥북 필수 세팅", "개발 생산성 도구", "IT 테크 트렌드", "스마트 워크"]
+    schedule_times: ["07:00", "13:00", "19:00"]
+    enabled: true
+
+  - id: "blog_2"
+    name: "금융 & 재테크 인사이트"
+    subdomain: "blog2_subdomain"
+    themes:
+      - name: "재테크 기본기 및 절세 전략"
+        keywords: ["연말정산 팁", "청년도약계좌", "비과세 저축보험", "절세 혜택", "신용점수 올리는 법", "통장 쪼개기"]
+      - name: "주식 및 ETF/부동산 투자"
+        keywords: ["미국 배당주 ETF", "ISA 계좌 활용", "국내 고배당주", "부동산 청약 가이드", "초보 주식 투자법"]
+    schedule_times: ["07:15", "13:15", "19:15"]
+    enabled: true
+
+  - id: "blog_3"
+    name: "건강 & 웰빙 라이프 가이드"
+    subdomain: "blog3_subdomain"
+    themes:
+      - name: "다이어트 식단 및 홈트레이닝"
+        keywords: ["간헐적 단식", "고단백 식단", "직장인 홈트 루틴", "체지방 감량", "영양제 추천 조합"]
+      - name: "스트레스 및 수면 건강 관리"
+        keywords: ["불면증 극복 습관", "마그네슘 효능", "스트레스 해소법", "딥 슬립 만드는 법", "만성 피로 관리"]
+    schedule_times: ["07:30", "13:30", "19:30"]
+    enabled: true
+
+  - id: "blog_4"
+    name: "자기계발 & 생산성 향상"
+    subdomain: "blog4_subdomain"
+    themes:
+      - name: "시간 관리 및 목표 달성법"
+        keywords: ["포모도로 시간 관리", "모닝 루틴 만드는 법", "시간 관리 매트릭스", "목표 달성 OKR 가이드", "미루는 습관 고치기"]
+      - name: "직장인 커리어 및 업무 스킬"
+        keywords: ["칼퇴 부르는 보고서 스킬", "비즈니스 이메일 작성법", "스피치와 설득의 기술", "성과 내는 기획서", "이직 준비 전략"]
+    schedule_times: ["07:45", "13:45", "19:45"]
+    enabled: true
+
+  - id: "blog_5"
+    name: "생활 꿀팁 & 정부 정책 정보"
+    subdomain: "blog5_subdomain"
+    themes:
+      - name: "정부 지원금 및 복지 정책"
+        keywords: ["청년월세 지원 신청방법", "국민내일배움카드 발급", "숨은 정부 지원금 찾기", "청년 주거 지원", "복지 멤버십 혜택"]
+      - name: "일상생활 유용한 꿀팁 모음"
+        keywords: ["항공권 최저가 예매법", "자취생 절약 노하우", "중고거래 사기 예방법", "생활비 절약 팁", "자동차 세금 절약"]
+    schedule_times: ["08:00", "14:00", "20:00"]
+    enabled: true
+
+# Gemini AI 모델 설정
+ai:
+  text_model: "gemini-3.6-flash"
+  image_model: "imagen-3.0-generate-002"
+  temperature: 0.7
+
+# 포스팅 기본 설정
+publishing:
+  default_status: "PUBLIC" # PUBLIC(공개 발행) 또는 DRAFT(임시 저장)
+  headless: true            # 브라우저 백그라운드 실행 여부
+  add_toc: true             # 목차 자동 생성
+  add_faq: true             # FAQ 생성
+  generate_thumbnail: true  # 썸네일 자동 생성 여부
