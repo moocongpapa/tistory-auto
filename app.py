@@ -6,6 +6,7 @@ import os
 import sys
 import logging
 from typing import Optional
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -37,7 +38,19 @@ from core.database import DatabaseManager
 from core.scheduler import MultiBlogScheduler
 from core.trend_collector import TrendCollector
 
-app = FastAPI(title="Tistory Multi-Blog Publisher Dashboard")
+# Global singletons
+db = DatabaseManager()
+scheduler_runner = MultiBlogScheduler(use_background=True)
+trend_collector = TrendCollector()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("FastAPI 시작: 백그라운드 스케줄러를 가동합니다...")
+    scheduler_runner.start()
+    yield
+    logger.info("FastAPI 종료")
+
+app = FastAPI(title="Tistory Multi-Blog Publisher Dashboard", lifespan=lifespan)
 
 # Static and Templates
 THUMBNAILS_DIR = os.path.join(BASE_DIR, "generated", "thumbnails")
@@ -45,16 +58,6 @@ os.makedirs(THUMBNAILS_DIR, exist_ok=True)
 app.mount("/static/thumbnails", StaticFiles(directory=THUMBNAILS_DIR), name="thumbnails")
 
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "web", "templates"))
-
-# Global singletons
-db = DatabaseManager()
-scheduler_runner = MultiBlogScheduler(use_background=True)
-trend_collector = TrendCollector()
-
-@app.on_event("startup")
-def on_startup():
-    logger.info("Starting Background Scheduler inside FastAPI...")
-    scheduler_runner.start()
 
 class TriggerPostRequest(BaseModel):
     blog_id: str = "blog_1"
@@ -96,11 +99,11 @@ async def dashboard_home(request: Request):
 @app.post("/api/trigger-post")
 async def trigger_post(req: TriggerPostRequest):
     try:
-        logger.info(f"Web trigger received for blog: {req.blog_id} (is_draft={req.is_draft})")
+        logger.info(f"수동 포스팅 요청 수신: {req.blog_id} (임시저장={req.is_draft})")
         result = scheduler_runner.run_blog_pipeline(blog_id=req.blog_id, is_draft_override=req.is_draft)
         return result
     except Exception as e:
-        logger.error(f"Error executing triggered post: {e}")
+        logger.error(f"포스팅 실행 중 에러 발생: {e}")
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
 @app.get("/api/trends")
@@ -113,4 +116,4 @@ async def get_posts(blog_id: Optional[str] = None):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
