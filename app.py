@@ -37,6 +37,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger("web_server")
 
+import secrets
+import base64
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+
 from core.database import DatabaseManager
 from core.scheduler import MultiBlogScheduler
 from core.trend_collector import TrendCollector
@@ -56,6 +61,52 @@ async def lifespan(app: FastAPI):
     logger.info("FastAPI 종료")
 
 app = FastAPI(title="Tistory Multi-Blog Publisher Dashboard", lifespan=lifespan)
+
+# Security: HTTP Basic Auth Middleware to protect dashboard from unauthorized public access
+class DashboardAuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        username = os.environ.get("DASHBOARD_USERNAME", "admin")
+        password = os.environ.get("DASHBOARD_PASSWORD", "").strip()
+
+        # Whitelist public routes (Render keep-alive ping and static assets)
+        path = request.url.path
+        if path in ["/api/health", "/ping", "/favicon.ico"] or path.startswith("/static") or path.startswith("/assets"):
+            return await call_next(request)
+
+        # If DASHBOARD_PASSWORD is configured, require authentication
+        if password:
+            auth_header = request.headers.get("Authorization")
+            if not auth_header or not auth_header.startswith("Basic "):
+                return Response(
+                    content="Unauthorized: Access to Tistory AI Publisher is protected.",
+                    status_code=401,
+                    headers={"WWW-Authenticate": 'Basic realm="Tistory Publisher Dashboard"'}
+                )
+
+            try:
+                encoded_creds = auth_header.split(" ", 1)[1]
+                decoded = base64.b64decode(encoded_creds).decode("utf-8")
+                req_user, req_pass = decoded.split(":", 1)
+
+                is_user_valid = secrets.compare_digest(req_user, username)
+                is_pass_valid = secrets.compare_digest(req_pass, password)
+
+                if not (is_user_valid and is_pass_valid):
+                    return Response(
+                        content="Unauthorized: Invalid username or password.",
+                        status_code=401,
+                        headers={"WWW-Authenticate": 'Basic realm="Tistory Publisher Dashboard"'}
+                    )
+            except Exception:
+                return Response(
+                    content="Unauthorized",
+                    status_code=401,
+                    headers={"WWW-Authenticate": 'Basic realm="Tistory Publisher Dashboard"'}
+                )
+
+        return await call_next(request)
+
+app.add_middleware(DashboardAuthMiddleware)
 
 # Static and Templates
 THUMBNAILS_DIR = os.path.join(BASE_DIR, "generated", "thumbnails")
