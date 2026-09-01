@@ -7,6 +7,7 @@ import sys
 import yaml
 import asyncio
 import logging
+from datetime import datetime
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
@@ -237,6 +238,16 @@ async def set_model(req: UpdateModelRequest):
     except Exception as e:
         logger.error(f"모델 변경 중 오류: {e}")
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+@app.get("/api/health")
+@app.get("/ping")
+async def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "service": "Tistory Auto Publisher",
+        "message": "Render Keep-Alive Heartbeat OK"
+    }
 
 @app.get("/api/trends")
 async def get_trends():

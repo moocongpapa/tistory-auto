@@ -8,9 +8,11 @@ import logging
 import yaml
 from datetime import datetime
 from typing import Dict, Any, List, Optional
+import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 from core.database import DatabaseManager
 from core.gemini_client import GeminiClient
@@ -206,8 +208,18 @@ class MultiBlogScheduler:
             "status": post_result.get("status")
         }
 
+    def ping_self(self):
+        """Send a keep-alive heartbeat ping every 5 minutes to prevent Render from sleeping."""
+        try:
+            external_url = (os.environ.get("RENDER_EXTERNAL_URL") or os.environ.get("APP_URL") or "").rstrip("/")
+            target_url = f"{external_url}/api/health" if external_url else "http://127.0.0.1:8000/api/health"
+            resp = requests.get(target_url, timeout=10)
+            logger.info(f"💓 [Keep-Alive Heartbeat] Sent 5-min ping to {target_url} -> Status {resp.status_code}")
+        except Exception as e:
+            logger.debug(f"[Keep-Alive Heartbeat] Ping note: {e}")
+
     def register_jobs(self):
-        """Register cron schedules for all enabled blogs."""
+        """Register cron schedules for all enabled blogs and keep-alive heartbeat."""
         blogs = self.config.get("blogs", [])
         for b in blogs:
             if not b.get("enabled", True):
@@ -228,6 +240,16 @@ class MultiBlogScheduler:
                     replace_existing=True
                 )
                 logger.info(f"Scheduled [{blog_name}] for daily execution at {st}")
+
+        # Add 5-minute Keep-Alive Ping Job for Render free-tier sleep prevention
+        self.scheduler.add_job(
+            self.ping_self,
+            trigger=IntervalTrigger(minutes=5),
+            id="keep_alive_ping",
+            name="[Render Keep-Alive] 5분 주기 서버 활성 핑",
+            replace_existing=True
+        )
+        logger.info("Registered 5-minute Keep-Alive Heartbeat job for Render sleep prevention.")
 
     def get_scheduled_jobs_info(self) -> List[Dict[str, Any]]:
         jobs = []

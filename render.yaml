@@ -5,6 +5,7 @@ services:
     plan: free
     region: singapore
     dockerfilePath: Dockerfile
+    healthCheckPath: /api/health
     envVars:
       - key: PORT
         value: 8000
