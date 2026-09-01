@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: tistory-auto-publisher
+    env: docker
+    plan: free
+    region: singapore
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: KAKAO_EMAIL
+        sync: false
+      - key: KAKAO_PASSWORD
+        sync: false
