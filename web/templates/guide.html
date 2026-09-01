@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>티스토리 5채널 AI 자동화 시스템 설명 가이드</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen antialiased">
+
+    <!-- Top Navigation Bar -->
+    <nav class="border-b border-slate-200/80 bg-white/90 backdrop-blur sticky top-0 z-50 px-6 py-3.5 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Logo & Tabs -->
+            <div class="flex items-center space-x-8">
+                <a href="/" class="flex items-center space-x-3 group">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition">
+                        <i class="fa-solid fa-robot text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h1 class="text-base font-extrabold text-slate-900 leading-tight">티스토리 AI 멀티블로그</h1>
+                            <span class="bg-blue-100 text-blue-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full">v2.5 PRO</span>
+                        </div>
+                        <p class="text-xs text-slate-500">5채널 무인 자동 발행 & 애드센스 수익화</p>
+                    </div>
+                </a>
+
+                <!-- Nav Links -->
+                <div class="hidden md:flex items-center space-x-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    <a href="/" class="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>대시보드</span>
+                    </a>
+                    <a href="/guide" class="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-blue-600 shadow-sm">
+                        <i class="fa-solid fa-book-open"></i>
+                        <span>서비스 기능 가이드</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Back to Dashboard CTA -->
+            <div class="flex items-center space-x-3">
+                <a href="/" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition flex items-center space-x-2 shadow-sm shadow-blue-600/20">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>실시간 대시보드로 이동</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-6 py-10 space-y-12">
+
+        <!-- Hero Section -->
+        <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-8 sm:p-12 text-white shadow-xl shadow-indigo-600/10 relative overflow-hidden">
+            <div class="relative z-10 max-w-3xl space-y-4">
+                <span class="inline-flex items-center space-x-2 bg-white/20 backdrop-blur px-3 py-1 rounded-full text-xs font-bold">
+                    <i class="fa-solid fa-sparkles"></i>
+                    <span>완전 무인 24/7 자동 블로그 운영 솔루션</span>
+                </span>
+                <h1 class="text-2xl sm:text-4xl font-black leading-tight tracking-tight">
+                    대한민국 실시간 트렌드 수집부터<br>
+                    AI 글 작성, 썸네일, 수익화, 구글 색인까지 완벽 자동화
+                </h1>
+                <p class="text-blue-100 text-sm sm:text-base leading-relaxed font-medium">
+                    본 시스템은 구글 E-E-A-T 알고리즘과 다음/네이버 검색 엔진에 최적화된 고품질 전문 글을 매일 5개 블로그에 1일 3회(총 15편) 무인으로 발행하며, 애드센스와 쿠팡 파트너스를 통해 지속적인 패시브 인컴을 창출합니다.
+                </p>
+            </div>
+            <!-- Decorative Background Graphics -->
+            <div class="absolute -right-16 -bottom-16 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute right-32 top-8 text-white/10 text-9xl font-black pointer-events-none select-none">
+                <i class="fa-solid fa-robot"></i>
+            </div>
+        </div>
+
+        <!-- 6-Stage Core Workflow Architecture -->
+        <section class="space-y-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-diagram-project"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-extrabold text-slate-900">핵심 자동화 6단계 파이프라인</h2>
+                    <p class="text-xs text-slate-500">포스팅이 생성되고 발행되는 전 과정을 시각적으로 확인하세요.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                
+                <!-- Step 1 -->
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm hover:shadow-md transition relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="w-8 h-8 rounded-xl bg-red-100 text-red-600 font-extrabold flex items-center justify-center text-sm">01</span>
+                        <span class="text-xs font-bold bg-red-50 text-red-600 px-2.5 py-1 rounded-full">실시간 수집</span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-slate-900 mb-2 flex items-center space-x-2">
+                        <i class="fa-solid fa-fire text-red-500"></i>
+                        <span>트렌드 키워드 자동 결합</span>
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Google Trends KR 실시간 급상승 검색어와 블로그 테마별 핵심 키워드 풀을 결합하여 현재 대중의 관심도가 가장 높은 롱테일 주제를 자동 선정합니다.
+                    </p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm hover:shadow-md transition relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-600 font-extrabold flex items-center justify-center text-sm">02</span>
+                        <span class="text-xs font-bold bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full">AI 고품질 생성</span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-slate-900 mb-2 flex items-center space-x-2">
+                        <i class="fa-solid fa-brain text-indigo-500"></i>
+                        <span>구글 E-E-A-T 글 작성</span>
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Gemini AI가 3,000~4,000자 분량으로 소제목(H2, H3), 팁 박스(Blockquote), 비교 표(Table), FAQ를 구조화된 HTML 마크업으로 작성합니다.
+                    </p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm hover:shadow-md transition relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="w-8 h-8 rounded-xl bg-purple-100 text-purple-600 font-extrabold flex items-center justify-center text-sm">03</span>
+                        <span class="text-xs font-bold bg-purple-50 text-purple-600 px-2.5 py-1 rounded-full">디자인 엔진</span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-slate-900 mb-2 flex items-center space-x-2">
+                        <i class="fa-solid fa-image text-purple-500"></i>
+                        <span>3D 글래스모피즘 썸네일</span>
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        테마별 3D 앰비언트 글로우 오브 배경과 반투명 유리 카드, 볼드 타이포그래피, 듀얼 컬러 하이라이트가 적용된 고화질(1200x630) 썸네일을 자동 생성합니다.
+                    </p>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm hover:shadow-md transition relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 font-extrabold flex items-center justify-center text-sm">04</span>
+                        <span class="text-xs font-bold bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full">수익 극대화</span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-slate-900 mb-2 flex items-center space-x-2">
+                        <i class="fa-solid fa-dollar-sign text-amber-500"></i>
+                        <span>애드센스 & 쿠팡 파트너스</span>
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        본문 상단/중간/하단에 3단 반응형 애드센스 광고를 자동 주입하고, 키워드와 연관된 인기 상품의 쿠팡 파트너스 제휴 링크 박스를 생성합니다.
+                    </p>
+                </div>
+
+                <!-- Step 5 -->
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm hover:shadow-md transition relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-600 font-extrabold flex items-center justify-center text-sm">05</span>
+                        <span class="text-xs font-bold bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full">무인 발행</span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-slate-900 mb-2 flex items-center space-x-2">
+                        <i class="fa-solid fa-robot text-emerald-500"></i>
+                        <span>Playwright 자동 로그인 & 발행</span>
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        카카오 원클릭 로그인 자가 복구 엔진과 TinyMCE & CodeMirror 듀얼 에디터 동기화로 본문 누락 없이 100% 안전하게 글을 발행합니다.
+                    </p>
+                </div>
+
+                <!-- Step 6 -->
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm hover:shadow-md transition relative">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 font-extrabold flex items-center justify-center text-sm">06</span>
+                        <span class="text-xs font-bold bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full">SEO 가속</span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-slate-900 mb-2 flex items-center space-x-2">
+                        <i class="fa-solid fa-bolt text-blue-500"></i>
+                        <span>Google Indexing API 초고속 색인</span>
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        발행 완료된 글의 URL을 구글 색인 API에 즉시 전송하여 구글 검색 로봇이 수시간 내에 글을 긁어가 구글 1페이지에 조기 노출되도록 유도합니다.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 5 Channels Overview Section -->
+        <section class="space-y-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-extrabold text-slate-900">운영 중인 5개 전문 블로그 채널 스펙</h2>
+                    <p class="text-xs text-slate-500">각 블로그별 고유 타겟 주제와 매일 자동 발행되는 스케줄 시간표입니다.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {% for b in blogs %}
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:border-blue-400 transition">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-[11px] font-extrabold bg-indigo-50 border border-indigo-200 text-indigo-700 px-2.5 py-1 rounded-lg">
+                                {{ b.themes[0].name if b.themes else '전문 블로그' }}
+                            </span>
+                            <span class="text-xs text-slate-400 font-mono">1일 3회 자동 발행</span>
+                        </div>
+                        <h3 class="text-base font-extrabold text-slate-900 mb-1">{{ b.name }}</h3>
+                        <a href="https://{{ b.subdomain }}.tistory.com" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 font-mono inline-flex items-center space-x-1 mb-4 font-medium">
+                            <span>{{ b.subdomain }}.tistory.com</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                        </a>
+
+                        <div class="space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-3">
+                            <div>
+                                <span class="font-bold text-slate-700">📌 운영 테마 목록:</span>
+                                <div class="flex flex-wrap gap-1 mt-1">
+                                    {% for t in b.themes %}
+                                    <span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-medium">{{ t.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                        <span class="flex items-center space-x-1">
+                            <i class="fa-solid fa-clock text-indigo-500"></i>
+                            <span>발행 시간:</span>
+                        </span>
+                        <span class="font-mono font-bold text-slate-700">
+                            {{ b.schedule_times | join(', ') if b.schedule_times else '07:00, 13:00, 19:00' }}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Revenue & Monetization Engine -->
+        <section class="bg-white border border-slate-200/90 rounded-2xl p-8 shadow-sm space-y-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-coins"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-extrabold text-slate-900">수익화 시스템 (애드센스 & 쿠팡 파트너스)</h2>
+                    <p class="text-xs text-slate-500">글이 노출될 때마다 수익을 창출하는 2대 비즈니스 엔진 구조</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- AdSense 3-Tier -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3">
+                    <div class="flex items-center space-x-2 text-amber-800 font-extrabold text-sm">
+                        <i class="fa-brands fa-google text-amber-600 text-base"></i>
+                        <span>구글 애드센스 3단 전략 (ca-pub-9856782529784947)</span>
+                    </div>
+                    <ul class="text-xs text-slate-600 space-y-2 list-disc list-inside leading-relaxed">
+                        <li><b>상단 광고 (Top Slot)</b>: 글 시작 직후 독자 시선이 가장 먼저 머무는 골든 존에 반응형 배치.</li>
+                        <li><b>본문 중간 광고 (In-Article Mid Slot)</b>: 2번째 소제목(H2) 바로 위에 자연스럽게 삽입되어 완독 중 클릭률(CTR) 극대화.</li>
+                        <li><b>하단 광고 (Bottom Slot)</b>: 글 요약 및 FAQ 직후 독자의 추가 탐색 동선에 배치.</li>
+                        <li><b>클린 에디터 렌더링</b>: 본문 내 자바스크립트 간섭 없이 스킨 레벨에서 자동 렌더링되어 에디터 에러 원천 차단.</li>
+                    </ul>
+                </div>
+
+                <!-- Coupang Partners -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3">
+                    <div class="flex items-center space-x-2 text-blue-800 font-extrabold text-sm">
+                        <i class="fa-solid fa-cart-shopping text-blue-600 text-base"></i>
+                        <span>쿠팡 파트너스 HMAC 실시간 연동 (추가 3% 수수료)</span>
+                    </div>
+                    <ul class="text-xs text-slate-600 space-y-2 list-disc list-inside leading-relaxed">
+                        <li><b>실시간 키워드 매칭</b>: 글 주제와 연관된 인기 상품(영양제, IT 주변기기, 서적, 생활용품) 자동 검색.</li>
+                        <li><b>반응형 상품 추천 박스</b>: 상품 이미지, 실시간 최저가, 구매 바로가기 버튼이 포함된 모던 카드 UI 자동 삽입.</li>
+                        <li><b>공정위 공지 문구 자동 포함</b>: 공정거래위원회 표준 문구가 기본 포함되어 계정 제재 위험 없이 합법적 수익 창출.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ & Operations Guide -->
+        <section class="bg-white border border-slate-200/90 rounded-2xl p-8 shadow-sm space-y-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-circle-question"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-extrabold text-slate-900">운영 팁 & 자주 묻는 질문 (FAQ)</h2>
+                    <p class="text-xs text-slate-500">시스템을 원활하게 사용하기 위한 핵심 안내사항입니다.</p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80">
+                    <h3 class="text-sm font-extrabold text-slate-900 mb-1 flex items-center space-x-2">
+                        <span class="text-blue-600">Q.</span>
+                        <span>글 작성이 매일 정해진 시간에 자동으로 돌아가나요?</span>
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed pl-5">
+                        네! 본 시스템에는 <b>APScheduler</b>가 백그라운드 데몬으로 상시 가동 중입니다. 컴퓨터가 켜져 있고 서버가 실행 중인 동안, 매일 아침(07시~08시), 점심(13시~14시), 저녁(19시~20시)에 5개 블로그에 순차적으로 자동 포스팅이 진행됩니다.
+                    </p>
+                </div>
+
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80">
+                    <h3 class="text-sm font-extrabold text-slate-900 mb-1 flex items-center space-x-2">
+                        <span class="text-blue-600">Q.</span>
+                        <span>특정 블로그에 지금 당장 글을 올리고 싶을 때는 어떻게 하나요?</span>
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed pl-5">
+                        대시보드 상단의 <b>[원클릭 즉시 포스팅 생성]</b> 영역에서 원하는 블로그를 선택하고 '임시저장' 또는 '공개 발행'을 선택한 뒤 파란색 버튼을 누르면 15~30초 내에 즉시 글이 작성되어 등록됩니다.
+                    </p>
+                </div>
+
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80">
+                    <h3 class="text-sm font-extrabold text-slate-900 mb-1 flex items-center space-x-2">
+                        <span class="text-blue-600">Q.</span>
+                        <span>카카오 로그인 세션이 만료되면 어떻게 되나요?</span>
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed pl-5">
+                        자가 복구(Self-Healing) 엔진이 탑재되어 있어, 세션이 풀리더라도 봇이 <code>.env</code>에 등록된 카카오 계정 정보를 바탕으로 스스로 자동 로그인을 수행한 뒤 글 작성을 계속 이어갑니다. 사용자가 매번 로그인할 필요가 없습니다.
+                    </p>
+                </div>
+
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80">
+                    <h3 class="text-sm font-extrabold text-slate-900 mb-1 flex items-center space-x-2">
+                        <span class="text-blue-600">Q.</span>
+                        <span>AI 텍스트 생성 모델을 변경하고 싶어요.</span>
+                    </h3>
+                    <p class="text-xs text-slate-600 leading-relaxed pl-5">
+                        대시보드 우측 상단의 <b>[AI 모델] 드롭다운</b>에서 Gemini 3.5 Flash, Gemini 3.7 Flash, Gemini 2.5 Pro 등을 클릭 한 번으로 자유롭게 변경하실 수 있습니다. 변경된 설정은 실시간으로 저장되어 즉시 적용됩니다.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center text-xs text-slate-400 py-6 border-t border-slate-200/80">
+            <p>티스토리 5채널 AI 자동화 시스템 &copy; 2026. All rights reserved.</p>
+        </footer>
+
+    </main>
+
+</body>
+</html>

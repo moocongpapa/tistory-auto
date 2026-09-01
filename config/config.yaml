@@ -1,77 +1,181 @@
-# Tistory Multi-Blog Publisher Configuration
-app:
-  name: "Tistory Multi-Blog Auto Publisher"
-  version: "1.0.0"
-  log_level: "INFO"
-
-# 5개 블로그 및 각 블로그별 2개 테마 (총 10개 테마)
-# subdomain에는 본인의 티스토리 주소 앞부분을 입력합니다 (예: https://myblog.tistory.com -> myblog)
-blogs:
-  - id: "blog_1"
-    name: "IT & 테크 트렌드"
-    subdomain: "blog1_subdomain"
-    themes:
-      - name: "AI 및 생산성 도구 가이드"
-        keywords: ["생성형 AI 활용", "업무 자동화 툴", "ChatGPT 프롬프트", "Gemini 팁", "무료 AI", "노션 활용법"]
-      - name: "소프트웨어 및 IT 기기 리뷰/추천"
-        keywords: ["생산성 앱 추천", "맥북 필수 세팅", "개발 생산성 도구", "IT 테크 트렌드", "스마트 워크"]
-    schedule_times: ["07:00", "13:00", "19:00"]
-    enabled: true
-
-  - id: "blog_2"
-    name: "금융 & 재테크 인사이트"
-    subdomain: "blog2_subdomain"
-    themes:
-      - name: "재테크 기본기 및 절세 전략"
-        keywords: ["연말정산 팁", "청년도약계좌", "비과세 저축보험", "절세 혜택", "신용점수 올리는 법", "통장 쪼개기"]
-      - name: "주식 및 ETF/부동산 투자"
-        keywords: ["미국 배당주 ETF", "ISA 계좌 활용", "국내 고배당주", "부동산 청약 가이드", "초보 주식 투자법"]
-    schedule_times: ["07:15", "13:15", "19:15"]
-    enabled: true
-
-  - id: "blog_3"
-    name: "건강 & 웰빙 라이프 가이드"
-    subdomain: "blog3_subdomain"
-    themes:
-      - name: "다이어트 식단 및 홈트레이닝"
-        keywords: ["간헐적 단식", "고단백 식단", "직장인 홈트 루틴", "체지방 감량", "영양제 추천 조합"]
-      - name: "스트레스 및 수면 건강 관리"
-        keywords: ["불면증 극복 습관", "마그네슘 효능", "스트레스 해소법", "딥 슬립 만드는 법", "만성 피로 관리"]
-    schedule_times: ["07:30", "13:30", "19:30"]
-    enabled: true
-
-  - id: "blog_4"
-    name: "자기계발 & 생산성 향상"
-    subdomain: "blog4_subdomain"
-    themes:
-      - name: "시간 관리 및 목표 달성법"
-        keywords: ["포모도로 시간 관리", "모닝 루틴 만드는 법", "시간 관리 매트릭스", "목표 달성 OKR 가이드", "미루는 습관 고치기"]
-      - name: "직장인 커리어 및 업무 스킬"
-        keywords: ["칼퇴 부르는 보고서 스킬", "비즈니스 이메일 작성법", "스피치와 설득의 기술", "성과 내는 기획서", "이직 준비 전략"]
-    schedule_times: ["07:45", "13:45", "19:45"]
-    enabled: true
-
-  - id: "blog_5"
-    name: "생활 꿀팁 & 정부 정책 정보"
-    subdomain: "blog5_subdomain"
-    themes:
-      - name: "정부 지원금 및 복지 정책"
-        keywords: ["청년월세 지원 신청방법", "국민내일배움카드 발급", "숨은 정부 지원금 찾기", "청년 주거 지원", "복지 멤버십 혜택"]
-      - name: "일상생활 유용한 꿀팁 모음"
-        keywords: ["항공권 최저가 예매법", "자취생 절약 노하우", "중고거래 사기 예방법", "생활비 절약 팁", "자동차 세금 절약"]
-    schedule_times: ["08:00", "14:00", "20:00"]
-    enabled: true
-
-# Gemini AI 모델 설정
+adsense:
+  enabled: true
+  pub_id: ca-pub-9856782529784947
+  slot_bottom: ''
+  slot_mid: ''
+  slot_top: ''
 ai:
-  text_model: "gemini-3.6-flash"
-  image_model: "imagen-3.0-generate-002"
+  image_model: imagen-3.0-generate-002
   temperature: 0.7
-
-# 포스팅 기본 설정
+  text_model: gemini-3.5-flash
+app:
+  log_level: INFO
+  name: Tistory Multi-Blog Auto Publisher
+  version: 2.5.0
+blogs:
+- enabled: true
+  id: blog_1
+  name: Smart Work Lab (IT&테크/AI)
+  schedule_times:
+  - 06:30
+  - '11:30'
+  - '17:30'
+  subdomain: smartwork-lab
+  themes:
+  - keywords:
+    - 직장인 ChatGPT 업무 보고서 자동화 프롬프트 모음 2026
+    - Gemini AI 무료 활용법 초보 직장인 가이드
+    - 노코드 업무 자동화 툴 Zapier Make 비교 추천
+    - 생성형 AI 이미지 생성 무료 사이트 비교 순위
+    - RPA 업무 자동화 도입 사례 중소기업 비용 절감
+    - AI 코딩 도구 Cursor Copilot 무료 플랜 비교
+    - ChatGPT 엑셀 함수 자동 생성 프롬프트 모음
+    - 회사 업무 자동화 노션 AI 템플릿 무료 다운로드
+    name: AI&업무 자동화
+  - keywords:
+    - 2026 가성비 노트북 추천 직장인 대학생 용도별 비교
+    - 아이패드 프로 vs 갤럭시탭 S10 생산성 비교 후기
+    - 맥북 에어 M4 초기 세팅 필수 앱 10가지
+    - 직장인 생산성 앱 추천 무료 유료 비교 TOP 7
+    - 가성비 무선 이어폰 추천 통화품질 순위 비교 2026
+    - 스마트워치 추천 갤럭시워치7 vs 애플워치10 건강 기능 비교
+    name: IT 기기&앱 추천
+  - keywords:
+    - 2026 하반기 빅테크 AI 신기술 동향 총정리
+    - 애플 비전프로 2세대 출시일 스펙 가격 전망
+    - 클라우드 SaaS 시장 트렌드 중소기업 도입 가이드
+    - 차세대 폴더블 스마트폰 갤럭시Z 플립7 유출 스펙 정리
+    - AI 에이전트 시대 일자리 변화 전망 및 대비 전략
+    name: 테크 트렌드
+- enabled: true
+  id: blog_2
+  name: Money Roadmap 24 (금융&재테크)
+  schedule_times:
+  - 06:45
+  - '11:45'
+  - '17:45'
+  subdomain: finance-roadmap-for-future
+  themes:
+  - keywords:
+    - 2026 연말정산 절세 팁 놓치면 손해보는 공제 항목 체크리스트
+    - 청년도약계좌 가입 조건 변경 사항 만기 수령액 계산
+    - 고금리 파킹통장 금리 비교 토스뱅크 카카오뱅크 케이뱅크 2026
+    - 사회초년생 통장 쪼개기 4단계 급여 저축 투자 비상금 분리법
+    - 신용점수 올리는 방법 신용카드 사용 패턴 최적화
+    - 개인연금 IRP 세액공제 한도 연말정산 절세 전략
+    name: 예적금 & 파킹통장
+  - keywords:
+    - 미국 배당주 ETF 추천 SCHD VYM 적립식 투자 비교 2026
+    - 국내 고배당주 추천 은행주 배당 수익률 순위 비교
+    - 주식 초보 투자 시작 방법 증권사 수수료 비교 계좌 개설
+    - S&P500 ETF vs 나스닥100 ETF 장기 투자 수익률 비교
+    - 채권 ETF 투자 기초 금리 인하기 채권 가격 전망
+    - ISA 계좌 해외 ETF 투자 절세 매매 차익 비과세 한도
+    name: 주식 & ETF 투자
+  - keywords:
+    - 가계부 앱 추천 무료 뱅크샐러드 토스 가계부 비교 후기
+    - 종잣돈 1억 모으기 현실적 플랜 월급별 저축 로드맵
+    - 신혼부부 재테크 공동명의 vs 단독명의 주택 절세 전략
+    - 종합소득세 신고 프리랜서 절세 방법 경비 처리 가이드
+    name: 재테크 기본상식
+- enabled: true
+  id: blog_3
+  name: 정책 알리미 365 (정부 지원금&생활정보)
+  schedule_times:
+  - 07:00
+  - '12:00'
+  - '18:00'
+  subdomain: policy-finder365
+  themes:
+  - keywords:
+    - 2026 청년월세 지원 자격 조건 신청 방법 필요 서류 총정리
+    - 국민내일배움카드 발급 신청 방법 국비지원 교육 과정 추천
+    - 청년 전세자금 대출 조건 금리 비교 버팀목 전세 대출
+    - 2026 청년 주거지원 정책 및 월세 환급 신청 방법
+    name: 청년 정책
+  - keywords:
+    - 1인 가구 전기세 절약 꿀팁 여름 겨울 냉난방비 반토막
+    - 해외 항공권 최저가 예매 꿀팁 시기별 비교 사이트 추천
+    - 자취생 월 생활비 100만원 절약 식비 관리 노하우
+    - 중고거래 사기 예방법 당근마켓 번개장터 안전 거래 체크리스트
+    - 자동차 세금 연납 할인 신청 방법 자동차세 절약 꿀팁
+    name: 생활 지원
+  - keywords:
+    - 숨은 정부 지원금 찾기 보조금24 복지로 원스톱 조회 방법
+    - 근로장려금 신청 기간 자격 조건 지급일 계산 방법
+    - 출산 육아 지원금 총정리 첫만남이용권 부모급여 아동수당
+    - 2026년 하반기 달라지는 정책 제도 변경 사항 총정리
+    - K-패스 교통비 환급 신청 방법 카드사별 혜택 비교 정리
+    - 국민건강보험 환급금 조회 미수령 의료비 돌려받는 방법
+    name: 복지 혜택
+- enabled: true
+  id: blog_4
+  name: 웰니스 루틴 연구소 (건강&웰빙 라이프)
+  schedule_times:
+  - 07:15
+  - '12:15'
+  - '18:15'
+  subdomain: wellness-routine
+  themes:
+  - keywords:
+    - 불면증 극복 478 호흡법 마그네슘 수면 루틴 완벽 가이드
+    - 만성 피로 회복을 위한 나이트 웰니스 루틴
+    - 명상 초보자 마인드풀니스 스트레스 해소법
+    name: 수면&스트레스케어
+  - keywords:
+    - 직장인 만성 피로 영양제 추천 조합 비타민B 마그네슘 복용법
+    - 수면 개선 영양제 추천 멜라토닌 테아닌 마그네슘 비교 후기
+    - 간 건강 밀크씨슬 UDCA 효능 비교 음주 후 간 보호 영양제
+    - 눈 건강 루테인 아스타잔틴 오메가3 복합 영양제 추천 비교
+    name: 영양제&피로회복
+  - keywords:
+    - 직장인 퇴근 후 15분 홈트 루틴 전신 운동 유튜브 추천
+    - 거북목 라운드숄더 교정 스트레칭 사무실에서 5분 루틴
+    - 아침 10분 모닝 스트레칭 하루 컨디션 올리는 루틴
+    name: 홈트&웰빙루틴
+- enabled: true
+  id: blog_5
+  name: Grow Mindset (자기계발 & 커리어)
+  schedule_times:
+  - 07:30
+  - '12:30'
+  - '18:30'
+  subdomain: billionaire1004
+  themes:
+  - keywords:
+    - 포모도로 시간 관리법 직장인 집중력 향상 앱 추천 활용법
+    - 미라클 모닝 루틴 5am 클럽 실천 방법 현실적 후기
+    - 미루는 습관 극복법 5초의 법칙 2분 규칙 실전 적용
+    - 노션 습관 트래커 무료 템플릿 매일 루틴 기록 방법
+    - 목표 달성 OKR 작성법 직장인 분기별 성과 관리 가이드
+    name: 시간 관리&습관
+  - keywords:
+    - 직장인 이직 준비 전략 경력 이력서 작성법 면접 질문 대비
+    - 연봉 협상 방법 이직 시 연봉 올리는 현실적 전략 5가지
+    - 칼퇴 부르는 보고서 작성법 상사가 OK하는 기획서 구조
+    - PREP 프레임워크 논리적 말하기 프레젠테이션 설득 기술
+    - 국비지원 IT 직무전환 부트캠프 추천 비교 취업률 후기
+    name: 업무 스킬&커리어
+  - keywords:
+    - 2026 자기계발서 베스트셀러 추천 리뷰 요약 TOP 5
+    - 번아웃 증후군 자가진단 극복 방법 회복탄력성 기르기
+    - 성장형 사고방식 훈련 방법 고정 마인드셋 vs 성장 마인드셋
+    - 직장인 멘탈 관리법 명상 저널링 감사일기 효과 후기
+    - 성공하는 사람들의 아침 습관 루틴 빌 게이츠 일론 머스크
+    name: 성장 도서&마인드
 publishing:
-  default_status: "PUBLIC" # PUBLIC(공개 발행) 또는 DRAFT(임시 저장)
-  headless: true            # 브라우저 백그라운드 실행 여부
-  add_toc: true             # 목차 자동 생성
-  add_faq: true             # FAQ 생성
-  generate_thumbnail: true  # 썸네일 자동 생성 여부
+  add_faq: true
+  add_summary_card: true
+  add_table: true
+  add_toc: true
+  default_status: PUBLIC
+  generate_thumbnail: true
+  heading_count: '4_5'
+  headless: true
+  max_word_count: 3500
+  min_word_count: 2500
+  tone_style: professional
+seo:
+  auto_meta_description: true
+  category_mapping: true
+  internal_link_count: 2

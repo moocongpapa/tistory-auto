@@ -123,6 +123,10 @@ class DatabaseManager:
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
 
+    def get_posts_by_blog(self, blog_id: str, limit: int = 20) -> List[Dict[str, Any]]:
+        """Fetch posts specifically for a single blog ID."""
+        return self.get_all_posts(blog_id=blog_id, limit=limit)
+
     def get_dashboard_stats(self) -> Dict[str, Any]:
         today_prefix = datetime.now().strftime("%Y-%m-%d")
         with self.get_connection() as conn:
@@ -141,3 +145,22 @@ class DatabaseManager:
                 "today_posts": today_posts,
                 "active_blogs": active_blogs
             }
+
+    def delete_posts(self, post_ids: List[int]) -> int:
+        """Delete specific posts by IDs."""
+        if not post_ids:
+            return 0
+        placeholders = ",".join(["?"] * len(post_ids))
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"DELETE FROM posts WHERE id IN ({placeholders})", post_ids)
+            conn.commit()
+            return cursor.rowcount
+
+    def delete_all_posts(self) -> int:
+        """Delete all post history."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM posts")
+            conn.commit()
+            return cursor.rowcount

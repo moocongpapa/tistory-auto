@@ -3,84 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>티스토리 다중 블로그 자동 포스팅 대시보드</title>
+    <title>티스토리 5채널 AI 자동화 대시보드</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
-        body { font-family: 'Pretendard', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap');
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            letter-spacing: -0.015em;
+        }
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
+<body class="bg-slate-50/70 text-slate-800 min-h-screen antialiased selection:bg-blue-500 selection:text-white">
 
-    <!-- Navbar -->
-    <nav class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-                <i class="fa-solid fa-robot text-xl"></i>
+    <!-- Top Navigation Bar (Full-Width) -->
+    <nav class="border-b border-slate-200/80 bg-white/95 backdrop-blur sticky top-0 z-50 px-6 lg:px-10 py-3 shadow-xs">
+        <div class="max-w-[1720px] mx-auto flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Logo & Nav -->
+            <div class="flex items-center space-x-6">
+                <a href="/" class="flex items-center space-x-3 group focus-visible:ring-2 focus-visible:ring-blue-500 rounded-xl outline-none">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition">
+                        <i class="fa-solid fa-robot text-base" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h1 class="text-sm font-black text-slate-900 leading-tight">티스토리 AI 멀티블로그</h1>
+                            <span class="bg-blue-50 text-blue-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-blue-200/60">PRO v2.5</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 font-medium">5채널 무인 자동 발행 & 애드센스</p>
+                    </div>
+                </a>
+
+                <!-- Tabs -->
+                <div class="hidden sm:flex items-center space-x-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/80">
+                    <a href="/" class="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-blue-600 shadow-xs focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">
+                        <i class="fa-solid fa-chart-pie text-xs" aria-hidden="true"></i>
+                        <span>대시보드</span>
+                    </a>
+                    <a href="/guide" class="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">
+                        <i class="fa-solid fa-book-open text-xs" aria-hidden="true"></i>
+                        <span>기능 가이드</span>
+                    </a>
+                </div>
             </div>
-            <div>
-                <h1 class="text-lg font-bold text-white leading-tight">티스토리 다중 블로그 AI 자동 발행기</h1>
-                <p class="text-xs text-slate-400">Gemini 3.6 Flash & Imagen 3 & Playwright 24/7 연동</p>
+
+            <!-- Right Controls: Model Selector & Live Status -->
+            <div class="flex items-center flex-wrap gap-2.5">
+                <!-- AI Model Dropdown -->
+                <div class="flex items-center space-x-2 bg-slate-100/80 border border-slate-200 rounded-xl px-2.5 py-1.5">
+                    <i class="fa-solid fa-brain text-indigo-600 text-xs" aria-hidden="true"></i>
+                    <label for="aiModelSelect" class="text-xs font-bold text-slate-700">AI 모델:</label>
+                    <select id="aiModelSelect" onchange="changeAiModel(this.value)" class="bg-white text-xs font-bold text-indigo-700 border border-slate-200/90 rounded-lg px-2.5 py-1 focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none cursor-pointer shadow-xs">
+                        <option value="gemini-3.5-flash" {% if current_model == 'gemini-3.5-flash' %}selected{% endif %}>⚡ Gemini 3.5 Flash (권장)</option>
+                        <option value="gemini-3.5-flash-lite" {% if current_model == 'gemini-3.5-flash-lite' %}selected{% endif %}>🚀 Gemini 3.5 Flash-Lite (초고속)</option>
+                        <option value="gemini-3.7-flash" {% if current_model == 'gemini-3.7-flash' %}selected{% endif %}>✨ Gemini 3.7 Flash (최신)</option>
+                        <option value="gemini-3.6-flash" {% if current_model == 'gemini-3.6-flash' %}selected{% endif %}>🧠 Gemini 3.6 Flash</option>
+                        <option value="gemini-2.5-pro" {% if current_model == 'gemini-2.5-pro' %}selected{% endif %}>🔬 Gemini 2.5 Pro (심층)</option>
+                    </select>
+                    <span id="modelChangeBadge" class="hidden text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold" aria-live="polite">저장됨!</span>
+                </div>
+
+                <!-- AdSense Status -->
+                <div class="hidden md:flex items-center space-x-1.5 bg-amber-50/80 border border-amber-200 text-amber-800 px-2.5 py-1.5 rounded-xl text-xs font-bold">
+                    <i class="fa-solid fa-circle-dollar-to-slot text-amber-600" aria-hidden="true"></i>
+                    <span>애드센스 3단 ON</span>
+                </div>
+
+                <!-- Scheduler Status -->
+                <div class="flex items-center space-x-2 bg-emerald-50/80 border border-emerald-200 text-emerald-800 px-2.5 py-1.5 rounded-xl text-xs font-bold">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true"></span>
+                    <span>24/7 자동 가동 중</span>
+                </div>
+
+                <!-- Reload Button -->
+                <button onclick="location.reload()" aria-label="대시보드 새로고침" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">
+                    <i class="fa-solid fa-rotate-right text-xs" aria-hidden="true"></i>
+                </button>
             </div>
-        </div>
-        <div class="flex items-center space-x-4">
-            <div class="flex items-center space-x-2 bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 px-3 py-1.5 rounded-full text-xs font-semibold">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>24/7 자동 스케줄러 작동 중</span>
-            </div>
-            <button onclick="location.reload()" class="text-slate-400 hover:text-white transition text-sm p-2">
-                <i class="fa-solid fa-rotate-right"></i> 새로고침
-            </button>
         </div>
     </nav>
 
-    <!-- Main Container -->
-    <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+    <!-- Main Workspace (Wide 1720px Full-Width Layout) -->
+    <main class="max-w-[1720px] mx-auto px-6 lg:px-10 py-6 space-y-6">
 
-        <!-- Stat Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
-            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-5 shadow-sm">
-                <div class="flex items-center justify-between text-slate-400 mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider">오늘 발행 건수</span>
-                    <i class="fa-solid fa-calendar-check text-blue-400"></i>
+        <!-- 4 Key Metrics Overview -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Today Posts -->
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:border-slate-300 transition group">
+                <div class="flex items-center justify-between text-slate-500 mb-1.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">오늘 발행 건수</span>
+                    <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs group-hover:scale-110 transition">
+                        <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
+                    </div>
                 </div>
-                <div class="text-3xl font-extrabold text-white">{{ stats.today_posts }} <span class="text-sm text-slate-400 font-normal">건</span></div>
-                <div class="text-xs text-slate-400 mt-2">일일 목표 (블로그당 3회)</div>
+                <div class="text-2xl font-black text-slate-900 tabular-nums">{{ stats.today_posts }} <span class="text-xs text-slate-400 font-medium">건</span></div>
+                <div class="text-[11px] text-slate-500 mt-1 flex items-center space-x-1">
+                    <span class="text-blue-600 font-bold">목표 15건</span>
+                    <span>(채널당 3회 자동)</span>
+                </div>
             </div>
 
-            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-5 shadow-sm">
-                <div class="flex items-center justify-between text-slate-400 mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider">총 누적 발행수</span>
-                    <i class="fa-solid fa-newspaper text-indigo-400"></i>
+            <!-- Total Cumulative Posts -->
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:border-slate-300 transition group">
+                <div class="flex items-center justify-between text-slate-500 mb-1.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">총 누적 발행수</span>
+                    <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs group-hover:scale-110 transition">
+                        <i class="fa-solid fa-newspaper" aria-hidden="true"></i>
+                    </div>
                 </div>
-                <div class="text-3xl font-extrabold text-white">{{ stats.total_posts }} <span class="text-sm text-slate-400 font-normal">건</span></div>
-                <div class="text-xs text-slate-400 mt-2">SQLite DB 누적 기록 수</div>
+                <div class="text-2xl font-black text-slate-900 tabular-nums">{{ stats.total_posts }} <span class="text-xs text-slate-400 font-medium">건</span></div>
+                <div class="text-[11px] text-slate-500 mt-1">로컬 SQLite DB 누적 아카이브</div>
             </div>
 
-            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-5 shadow-sm">
-                <div class="flex items-center justify-between text-slate-400 mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider">운영 중인 블로그</span>
-                    <i class="fa-solid fa-layer-group text-purple-400"></i>
+            <!-- Active Channels -->
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:border-slate-300 transition group">
+                <div class="flex items-center justify-between text-slate-500 mb-1.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">운영 중인 블로그</span>
+                    <div class="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-xs group-hover:scale-110 transition">
+                        <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+                    </div>
                 </div>
-                <div class="text-3xl font-extrabold text-white">{{ blogs|length }} <span class="text-sm text-slate-400 font-normal">개</span></div>
-                <div class="text-xs text-slate-400 mt-2">설정된 활성 채널 수</div>
+                <div class="text-2xl font-black text-slate-900 tabular-nums">{{ blogs|length }} <span class="text-xs text-slate-400 font-medium">개 채널</span></div>
+                <div class="text-[11px] text-slate-500 mt-1">5개 서브도메인 & 전용 스킨</div>
             </div>
 
-            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-5 shadow-sm">
-                <div class="flex items-center justify-between text-slate-400 mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider">다음 예약 실행</span>
-                    <i class="fa-solid fa-clock text-amber-400"></i>
+            <!-- Next Scheduled Execution -->
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:border-slate-300 transition group">
+                <div class="flex items-center justify-between text-slate-500 mb-1.5">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">다음 예약 실행</span>
+                    <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs group-hover:scale-110 transition">
+                        <i class="fa-solid fa-clock" aria-hidden="true"></i>
+                    </div>
                 </div>
-                <div class="text-lg font-bold text-amber-300 truncate">
+                <div class="text-lg font-extrabold text-amber-600 truncate tabular-nums">
                     {% if scheduled_jobs %}
                         {{ scheduled_jobs[0].next_run.split(' ')[1] if ' ' in scheduled_jobs[0].next_run else scheduled_jobs[0].next_run }}
                     {% else %}
                         예약 없음
                     {% endif %}
                 </div>
-                <div class="text-xs text-slate-400 mt-2 truncate">
+                <div class="text-[11px] text-slate-500 mt-1 truncate font-medium">
                     {% if scheduled_jobs %}
                         {{ scheduled_jobs[0].name }}
                     {% else %}
@@ -90,143 +173,310 @@
             </div>
         </div>
 
-        <!-- Real-time Trends & Action Bar -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 3-Column Middle Section: Trends (1/3), Quality Control (1/3), Instant Trigger (1/3) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
             
-            <!-- Left 2 Cols: Real-time Trends -->
-            <div class="lg:col-span-2 bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center space-x-2">
-                        <i class="fa-solid fa-fire text-red-400"></i>
-                        <h2 class="text-base font-bold text-white">실시간 대한민국 검색 트렌드 (Google Trends KR)</h2>
+            <!-- 1. Real-time Trends (1/3 Column) -->
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-2.5">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-6 h-6 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-fire" aria-hidden="true"></i>
+                            </div>
+                            <h2 class="text-xs font-black text-slate-900 uppercase tracking-wide">실시간 검색 트렌드 (Google)</h2>
+                        </div>
+                        <span class="text-[10px] text-slate-400 font-medium">자동 결합</span>
                     </div>
-                    <span class="text-xs text-slate-400">자동 포스팅 주제 발굴에 결합</span>
+                    <div class="flex flex-wrap gap-1.5 pt-1 max-h-48 overflow-y-auto pr-1">
+                        {% for trend in trends %}
+                        <span class="bg-slate-50 hover:bg-slate-100 border border-slate-200/90 text-slate-700 text-[11px] px-2 py-1 rounded-lg flex items-center space-x-1 transition cursor-default">
+                            <span class="text-rose-500 font-bold">#</span>
+                            <span class="font-medium text-slate-800">{{ trend.query }}</span>
+                            {% if trend.traffic %}
+                            <span class="text-[9px] bg-rose-50 text-rose-700 px-1 py-0.2 rounded font-mono font-bold">{{ trend.traffic }}</span>
+                            {% endif %}
+                        </span>
+                        {% endfor %}
+                    </div>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    {% for trend in trends %}
-                    <span class="bg-slate-700/70 hover:bg-slate-700 border border-slate-600/50 text-slate-200 text-xs px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition">
-                        <span class="text-red-400 font-bold">#</span>
-                        <span>{{ trend.query }}</span>
-                        {% if trend.traffic %}
-                        <span class="text-[10px] bg-red-950 text-red-300 px-1.5 py-0.5 rounded font-mono">{{ trend.traffic }}</span>
-                        {% endif %}
-                    </span>
-                    {% endfor %}
-                </div>
+                <p class="text-[10px] text-slate-400 mt-2.5 pt-2 border-t border-slate-100">
+                    💡 2시간 주기로 실시간 검색어를 수집하여 블로그 테마에 맞춤 반영합니다.
+                </p>
             </div>
 
-            <!-- Right 1 Col: Quick Trigger Post -->
-            <div class="bg-gradient-to-br from-blue-950/40 to-indigo-950/40 border border-blue-500/30 rounded-2xl p-6 flex flex-col justify-between">
+            <!-- 2. AI Article Quality Control Center (1/3 Column) -->
+            <div class="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
                 <div>
-                    <div class="flex items-center space-x-2 mb-2 text-blue-400 font-bold">
-                        <i class="fa-solid fa-bolt"></i>
-                        <h2>즉시 포스팅 트리거</h2>
+                    <div class="flex items-center justify-between mb-2.5">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-6 h-6 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+                            </div>
+                            <h2 class="text-xs font-black text-slate-900 uppercase tracking-wide">AI 글 품질 & 분량 제어</h2>
+                        </div>
+                        <span id="qualitySaveBadge" class="hidden text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold" aria-live="polite">설정 저장됨!</span>
                     </div>
-                    <p class="text-xs text-slate-400 mb-4">지정한 블로그 파이프라인을 즉시 1회 실행하여 글을 발행합니다.</p>
-                    
-                    <div class="space-y-3">
+
+                    <div class="space-y-2.5 text-xs">
+                        <!-- Word Count Target -->
                         <div>
-                            <label class="text-xs font-semibold text-slate-300 block mb-1">대상 블로그 선택</label>
-                            <select id="selectBlog" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500">
+                            <label for="qualityWordCount" class="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                <span>🎯 목표 분량 (글자 수)</span>
+                                <span class="text-[10px] text-slate-400 font-normal">공백 포함</span>
+                            </label>
+                            <select id="qualityWordCount" onchange="saveQualityOptions()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus-visible:ring-2 focus-visible:ring-purple-500 outline-none shadow-2xs">
+                                <option value="1500_2500" {% if quality_config.min_word_count == 1500 %}selected{% endif %}>⚡ 콤팩트 요약 (1,500 ~ 2,500자)</option>
+                                <option value="2500_3500" {% if quality_config.min_word_count == 2500 or not quality_config.min_word_count %}selected{% endif %}>✨ 표준 정밀 분석 (2,500 ~ 3,500자) - 권장</option>
+                                <option value="3500_5000" {% if quality_config.min_word_count == 3500 or quality_config.min_word_count == 3000 %}selected{% endif %}>🔬 심층 전문 리포트 (3,500 ~ 5,000자)</option>
+                            </select>
+                        </div>
+
+                        <!-- Headings Count -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label for="qualityHeadings" class="text-[11px] font-bold text-slate-700 block mb-1">📑 소제목(H2) 수</label>
+                                <select id="qualityHeadings" onchange="saveQualityOptions()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-bold text-slate-800 focus-visible:ring-2 focus-visible:ring-purple-500 outline-none shadow-2xs">
+                                    <option value="3" {% if quality_config.heading_count == '3' %}selected{% endif %}>3개 (스피드)</option>
+                                    <option value="4_5" {% if quality_config.heading_count == '4_5' or not quality_config.heading_count %}selected{% endif %}>4~5개 (표준권장)</option>
+                                    <option value="6_plus" {% if quality_config.heading_count == '6_plus' %}selected{% endif %}>6개 이상 (백과사전)</option>
+                                </select>
+                            </div>
+
+                            <!-- Tone & Style -->
+                            <div>
+                                <label for="qualityTone" class="text-[11px] font-bold text-slate-700 block mb-1">🎙️ 어조 & 톤</label>
+                                <select id="qualityTone" onchange="saveQualityOptions()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-xs font-bold text-slate-800 focus-visible:ring-2 focus-visible:ring-purple-500 outline-none shadow-2xs">
+                                    <option value="friendly_expert" {% if quality_config.tone_style == 'friendly_expert' or not quality_config.tone_style %}selected{% endif %}>친근한 멘토 (~해요)</option>
+                                    <option value="professional" {% if quality_config.tone_style == 'professional' %}selected{% endif %}>공인 전문가 (~입니다)</option>
+                                    <option value="storytelling" {% if quality_config.tone_style == 'storytelling' %}selected{% endif %}>스토리텔링 (경험)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Checkboxes: Summary Card, Table, FAQ -->
+                        <div class="pt-1 flex items-center justify-between gap-1 text-[11px] text-slate-700 bg-slate-50/80 p-2 rounded-xl border border-slate-200/70">
+                            <label class="flex items-center space-x-1 cursor-pointer">
+                                <input type="checkbox" id="checkSummaryCard" onchange="saveQualityOptions()" {% if quality_config.add_summary_card != false %}checked{% endif %} class="rounded border-slate-300 text-purple-600 focus:ring-purple-500">
+                                <span>요약박스</span>
+                            </label>
+                            <label class="flex items-center space-x-1 cursor-pointer">
+                                <input type="checkbox" id="checkTable" onchange="saveQualityOptions()" {% if quality_config.add_table != false %}checked{% endif %} class="rounded border-slate-300 text-purple-600 focus:ring-purple-500">
+                                <span>비교표</span>
+                            </label>
+                            <label class="flex items-center space-x-1 cursor-pointer">
+                                <input type="checkbox" id="checkFaq" onchange="saveQualityOptions()" {% if quality_config.add_faq != false %}checked{% endif %} class="rounded border-slate-300 text-purple-600 focus:ring-purple-500">
+                                <span>FAQ</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-2 pt-2 border-t border-slate-100">
+                    ⚙️ 옵션을 변경하면 다음 포스팅 생성 시 즉시 프롬프트에 자동 적용됩니다.
+                </p>
+            </div>
+
+            <!-- 3. Right 1 Col: Quick Trigger Post (1/3 Column) -->
+            <div class="bg-gradient-to-br from-blue-50/90 to-indigo-50/80 border border-blue-200/80 rounded-2xl p-5 flex flex-col justify-between shadow-xs">
+                <div>
+                    <div class="flex items-center space-x-2 mb-2 text-blue-900 font-black">
+                        <div class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+                        </div>
+                        <h2 class="text-xs uppercase tracking-wide">원클릭 즉시 포스팅 생성</h2>
+                    </div>
+                    <p class="text-[11px] text-slate-600 mb-3">선택한 블로그 파이프라인(AI작성+썸네일+광고+발행)을 즉시 1회 가동합니다.</p>
+                    
+                    <div class="space-y-2">
+                        <div>
+                            <label for="selectBlog" class="text-[11px] font-bold text-slate-700 block mb-1">대상 블로그 선택</label>
+                            <select id="selectBlog" class="w-full bg-white border border-slate-300/90 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none shadow-xs">
                                 {% for b in blogs %}
-                                <option value="{{ b.id }}">[{{ b.name }}] {{ b.subdomain }}</option>
+                                <option value="{{ b.id }}">[{{ b.name }}] {{ b.subdomain }}.tistory.com</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="flex items-center space-x-4 text-xs text-slate-300">
+                        <div class="flex items-center space-x-4 text-xs text-slate-700 font-medium pt-0.5">
                             <label class="flex items-center space-x-1.5 cursor-pointer">
-                                <input type="radio" name="postMode" value="draft" checked class="text-blue-500">
-                                <span>임시저장 (권장 테스트)</span>
+                                <input type="radio" name="postMode" value="draft" class="text-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500">
+                                <span>임시저장</span>
                             </label>
                             <label class="flex items-center space-x-1.5 cursor-pointer">
-                                <input type="radio" name="postMode" value="public" class="text-blue-500">
-                                <span>공개 발행</span>
+                                <input type="radio" name="postMode" value="public" checked class="text-blue-600 focus-visible:ring-2 focus-visible:ring-blue-500">
+                                <span class="font-bold text-blue-700">공개 발행</span>
                             </label>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-5">
-                    <button id="btnTrigger" onclick="triggerPost()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center space-x-2 shadow-lg shadow-blue-600/30">
-                        <i class="fa-solid fa-paper-plane"></i>
+                <div class="mt-3.5">
+                    <button id="btnTrigger" onclick="triggerPost()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center space-x-2 shadow-sm active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-blue-500 outline-none">
+                        <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
                         <span id="btnText">지금 즉시 포스팅 생성</span>
                     </button>
-                    <div id="triggerResult" class="hidden mt-3 p-2.5 rounded-lg text-xs"></div>
+                    <div id="triggerResult" class="hidden mt-2 p-2 rounded-xl text-xs" aria-live="polite"></div>
                 </div>
             </div>
         </div>
 
-        <!-- Post History Table -->
-        <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl overflow-hidden shadow-sm">
-            <div class="px-6 py-4 border-b border-slate-700/60 flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-list-check text-blue-400"></i>
-                    <h2 class="text-base font-bold text-white">최근 발행 내역 및 히스토리</h2>
+        <!-- Post History Table with Redesigned Responsive Filter Bar -->
+        <div class="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs">
+            
+            <!-- Table Header & Action Toolbar -->
+            <div class="px-5 py-3.5 border-b border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50/60">
+                
+                <!-- Left Title & Selected Delete -->
+                <div class="flex items-center space-x-3 flex-wrap gap-2">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 rounded-full bg-blue-600"></div>
+                        <h2 class="text-xs font-black text-slate-900 uppercase tracking-wide">최근 발행 내역 및 히스토리</h2>
+                    </div>
+
+                    <!-- Delete Actions -->
+                    <button onclick="deleteSelectedPosts()" id="deleteSelectedBtn" class="hidden items-center space-x-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold px-2.5 py-1 rounded-lg transition shadow-xs focus-visible:ring-2 focus-visible:ring-rose-500 outline-none">
+                        <i class="fa-regular fa-trash-can text-xs" aria-hidden="true"></i>
+                        <span>선택 삭제 (<span id="selectedCount" class="tabular-nums">0</span>)</span>
+                    </button>
+                    <button onclick="deleteAllPosts()" class="inline-flex items-center space-x-1.5 bg-white hover:bg-rose-50 hover:text-rose-600 text-slate-600 border border-slate-200 text-xs font-bold px-2.5 py-1 rounded-lg transition shadow-xs focus-visible:ring-2 focus-visible:ring-slate-400 outline-none whitespace-nowrap" title="발행 내역 전체 초기화">
+                        <i class="fa-solid fa-broom text-xs" aria-hidden="true"></i>
+                        <span>전체 비우기</span>
+                    </button>
                 </div>
-                <span class="text-xs text-slate-400">총 {{ posts|length }}개 기록 중</span>
+
+                <!-- Right Blog Segmented Filter Buttons (No line breaking) -->
+                <div class="flex items-center space-x-1 overflow-x-auto pb-1 md:pb-0 max-w-full">
+                    <button onclick="filterPosts('all')" class="post-filter-btn active bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-xs transition whitespace-nowrap flex-shrink-0 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none" data-filter="all">전체보기</button>
+                    {% for b in blogs %}
+                    <button onclick="filterPosts('{{ b.id }}')" class="post-filter-btn bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold px-2.5 py-1.5 rounded-lg transition whitespace-nowrap flex-shrink-0 focus-visible:ring-2 focus-visible:ring-slate-400 outline-none" data-filter="{{ b.id }}">{{ b.name }}</button>
+                    {% endfor %}
+                </div>
             </div>
 
+            <!-- Table -->
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs text-slate-300">
-                    <thead class="bg-slate-900/60 text-slate-400 uppercase font-semibold border-b border-slate-700/60">
+                <table class="w-full text-left text-xs text-slate-700">
+                    <thead class="bg-slate-50/80 text-slate-500 uppercase font-bold text-[10px] border-b border-slate-200/80 tracking-wider">
                         <tr>
-                            <th class="px-6 py-3.5">썸네일</th>
-                            <th class="px-6 py-3.5">블로그 / 테마</th>
-                            <th class="px-6 py-3.5">선정 키워드</th>
-                            <th class="px-6 py-3.5">포스팅 제목</th>
-                            <th class="px-6 py-3.5">상태</th>
-                            <th class="px-6 py-3.5">발행 일시</th>
-                            <th class="px-6 py-3.5 text-right">링크</th>
+                            <th class="px-3.5 py-2.5 w-9 text-center">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" aria-label="전체 포스트 선택" class="w-3.5 h-3.5 text-blue-600 rounded border-slate-300 focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer">
+                            </th>
+                            <th class="px-3 py-2.5 w-16 text-center">썸네일</th>
+                            <th class="px-3.5 py-2.5 w-52">블로그명</th>
+                            <th class="px-3.5 py-2.5 w-36">카테고리</th>
+                            <th class="px-3.5 py-2.5 w-56">선정 키워드</th>
+                            <th class="px-3.5 py-2.5">포스팅 제목</th>
+                            <th class="px-3.5 py-2.5 text-center w-24">상태</th>
+                            <th class="px-3.5 py-2.5 w-36">발행 일시</th>
+                            <th class="px-3.5 py-2.5 text-center w-20 whitespace-nowrap">바로가기</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-700/40">
+                    <tbody id="postsTableBody" class="divide-y divide-slate-100">
                         {% if not posts %}
-                        <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-slate-500">
-                                <i class="fa-regular fa-folder-open text-3xl mb-3 block text-slate-600"></i>
+                        <tr id="emptyRow">
+                            <td colspan="9" class="px-4 py-10 text-center text-slate-400">
+                                <i class="fa-regular fa-folder-open text-3xl mb-2.5 block text-slate-300" aria-hidden="true"></i>
                                 아직 발행된 글 이력이 없습니다. 위의 즉시 포스팅 버튼을 눌러 테스트해보세요!
                             </td>
                         </tr>
                         {% endif %}
                         {% for p in posts %}
-                        <tr class="hover:bg-slate-750/50 transition">
-                            <td class="px-6 py-3">
+                        <tr class="post-row hover:bg-blue-50/30 transition-colors" data-blog-id="{{ p.blog_id }}" data-post-id="{{ p.id }}">
+                            <!-- Checkbox -->
+                            <td class="px-3.5 py-2.5 text-center">
+                                <input type="checkbox" class="post-checkbox w-3.5 h-3.5 text-blue-600 rounded border-slate-300 focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer" value="{{ p.id }}" onchange="updateSelectedCount()" aria-label="선택">
+                            </td>
+
+                            <!-- Thumbnail Preview (Compact & Clean) -->
+                            <td class="px-3 py-2.5 text-center">
                                 {% if p.thumbnail_path %}
-                                <img src="/static/thumbnails/{{ p.thumbnail_path }}" alt="썸네일" class="w-16 h-10 object-cover rounded-lg border border-slate-700 hover:scale-110 transition cursor-pointer" onclick="window.open(this.src)">
+                                {% set thumb_src = '/' + p.thumbnail_path if p.thumbnail_path.startswith('assets/') else '/static/thumbnails/' + p.thumbnail_path %}
+                                <div class="relative group w-14 h-9 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs mx-auto cursor-pointer" onclick="window.open('{{ thumb_src }}')">
+                                    <img src="{{ thumb_src }}" alt="썸네일 이미지" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition duration-200">
+                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-[9px]">
+                                        <i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i>
+                                    </div>
+                                </div>
                                 {% else %}
-                                <div class="w-16 h-10 rounded-lg bg-slate-700 flex items-center justify-center text-slate-500 text-[10px]">No Img</div>
+                                <div class="w-14 h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 text-[9px] mx-auto">No Img</div>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-3">
-                                <div class="font-bold text-white">{{ p.blog_id }}</div>
-                                <div class="text-[11px] text-slate-400">{{ p.theme }}</div>
+
+                            <!-- Blog Name & Subdomain Link -->
+                            <td class="px-3.5 py-2.5">
+                                <div class="font-bold text-slate-900 text-xs truncate max-w-[200px]" title="{{ p.blog_name }}">
+                                    {{ p.blog_name }}
+                                </div>
+                                {% if p.blog_subdomain %}
+                                <a href="https://{{ p.blog_subdomain }}.tistory.com" target="_blank" class="text-[10px] text-blue-600 hover:text-blue-800 font-mono inline-flex items-center space-x-0.5 focus-visible:ring-1 focus-visible:ring-blue-500 rounded">
+                                    <span>{{ p.blog_subdomain }}</span>
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[8px]" aria-hidden="true"></i>
+                                </a>
+                                {% endif %}
                             </td>
-                            <td class="px-6 py-3">
-                                <span class="bg-blue-950/80 border border-blue-500/30 text-blue-300 px-2 py-0.5 rounded text-[11px] font-mono">
+
+                            <!-- Category / Theme Badge -->
+                            <td class="px-3.5 py-2.5">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 border border-indigo-200/80 text-indigo-700 whitespace-nowrap">
+                                    {{ p.theme }}
+                                </span>
+                            </td>
+
+                            <!-- Keyword -->
+                            <td class="px-3.5 py-2.5">
+                                <span class="bg-slate-100 border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md text-[10px] font-medium truncate max-w-[200px] inline-block" title="{{ p.keyword }}">
                                     {{ p.keyword }}
                                 </span>
                             </td>
-                            <td class="px-6 py-3 font-medium text-slate-100 max-w-xs truncate">
-                                {{ p.title }}
+
+                            <!-- Post Title -->
+                            <td class="px-3.5 py-2.5 font-semibold text-slate-800 max-w-lg">
+                                <div class="truncate hover:text-blue-600 transition text-xs" title="{{ p.title }}">
+                                    {{ p.title }}
+                                </div>
                             </td>
-                            <td class="px-6 py-3">
+
+                            <!-- Status Badge -->
+                            <td class="px-3.5 py-2.5 text-center whitespace-nowrap">
                                 {% if p.status == 'PUBLISHED' %}
-                                <span class="bg-emerald-950 border border-emerald-500/30 text-emerald-400 px-2 py-0.5 rounded text-[10px] font-bold">공개발행</span>
+                                <span class="inline-flex items-center space-x-1 bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-extrabold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true"></span>
+                                    <span>공개발행</span>
+                                </span>
                                 {% else %}
-                                <span class="bg-amber-950 border border-amber-500/30 text-amber-400 px-2 py-0.5 rounded text-[10px] font-bold">임시저장</span>
+                                <span class="inline-flex items-center space-x-1 bg-amber-50 border border-amber-200 text-amber-700 px-2 py-0.5 rounded-full text-[9px] font-extrabold">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                    <span>임시저장</span>
+                                </span>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-3 text-slate-400 font-mono text-[11px]">
+
+                            <!-- Date -->
+                            <td class="px-3.5 py-2.5 text-slate-500 font-mono text-[10px] whitespace-nowrap tabular-nums">
                                 {{ p.published_at }}
                             </td>
-                            <td class="px-6 py-3 text-right">
+
+                            <!-- Link Button -->
+                            <td class="px-3.5 py-2.5 text-center whitespace-nowrap min-w-[76px]">
                                 {% if p.post_url %}
-                                <a href="{{ p.post_url }}" target="_blank" class="bg-slate-700 hover:bg-slate-600 text-white px-2.5 py-1 rounded text-xs transition inline-flex items-center space-x-1">
+                                    {% if p.blog_id == 'blog_1' %}
+                                        {% set btn_theme = "bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border-blue-200 hover:border-blue-600 focus-visible:ring-blue-500" %}
+                                    {% elif p.blog_id == 'blog_2' %}
+                                        {% set btn_theme = "bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border-emerald-200 hover:border-emerald-600 focus-visible:ring-emerald-500" %}
+                                    {% elif p.blog_id == 'blog_3' %}
+                                        {% set btn_theme = "bg-sky-50 hover:bg-sky-600 text-sky-700 hover:text-white border-sky-200 hover:border-sky-600 focus-visible:ring-sky-500" %}
+                                    {% elif p.blog_id == 'blog_4' %}
+                                        {% set btn_theme = "bg-teal-50 hover:bg-teal-600 text-teal-700 hover:text-white border-teal-200 hover:border-teal-600 focus-visible:ring-teal-500" %}
+                                    {% elif p.blog_id == 'blog_5' %}
+                                        {% set btn_theme = "bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white border-purple-200 hover:border-purple-600 focus-visible:ring-purple-500" %}
+                                    {% else %}
+                                        {% set btn_theme = "bg-slate-100 hover:bg-slate-800 text-slate-700 hover:text-white border-slate-200 hover:border-slate-800 focus-visible:ring-slate-500" %}
+                                    {% endif %}
+                                <a href="{{ p.post_url }}" target="_blank" aria-label="블로그 글 보기" class="{{ btn_theme }} border px-2.5 py-1 rounded-lg text-[10px] font-extrabold transition inline-flex items-center space-x-1 shadow-2xs whitespace-nowrap outline-none focus-visible:ring-2">
                                     <span>보기</span>
-                                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[8px]" aria-hidden="true"></i>
                                 </a>
                                 {% else %}
-                                <span class="text-slate-500">-</span>
+                                <span class="text-slate-400 text-[10px]">-</span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -234,59 +484,299 @@
                     </tbody>
                 </table>
             </div>
-        </div>
 
-        <!-- Scheduled Jobs Timetable & System Logs -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            <!-- Schedule Timetable -->
-            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6">
-                <div class="flex items-center space-x-2 mb-4">
-                    <i class="fa-solid fa-calendar-days text-indigo-400"></i>
-                    <h2 class="text-base font-bold text-white">등록된 블로그별 자동 포스팅 스케줄</h2>
+            <!-- Compact Pagination Controls (10 items per page) -->
+            <div id="paginationContainer" class="px-4 py-2.5 bg-slate-50/80 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-600">
+                <div class="text-[11px] text-slate-500 font-medium" id="paginationInfo">
+                    총 <span class="font-bold text-slate-700 tabular-nums" id="pageTotalCount">0</span>개 글
                 </div>
-                <div class="space-y-2 max-h-64 overflow-y-auto pr-2">
-                    {% for job in scheduled_jobs %}
-                    <div class="flex items-center justify-between p-2.5 bg-slate-900/60 border border-slate-700/40 rounded-xl text-xs">
-                        <div class="flex items-center space-x-2">
-                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
-                            <span class="font-medium text-slate-200">{{ job.name }}</span>
-                        </div>
-                        <div class="text-slate-400 font-mono text-[11px]">
-                            다음: {{ job.next_run }}
-                        </div>
-                    </div>
-                    {% endfor %}
+                <div class="flex items-center space-x-1" id="paginationButtons">
+                    <!-- Dynamic Page Buttons inserted by JS -->
                 </div>
             </div>
+        </div>
 
-            <!-- System Logs Box -->
-            <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl p-6 flex flex-col justify-between">
+        <!-- Scheduled Jobs Timetable & Real-time Live Log Viewer -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            
+            <!-- Left 5 Cols: Schedule Timetable -->
+            <div class="lg:col-span-5 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
                 <div>
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center space-x-2">
-                            <i class="fa-solid fa-terminal text-emerald-400"></i>
-                            <h2 class="text-base font-bold text-white">시스템 최근 로그</h2>
+                    <div class="flex items-center space-x-2 mb-3.5">
+                        <div class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
                         </div>
-                        <span class="text-xs text-slate-400">최근 15줄</span>
+                        <h2 class="text-xs font-black text-slate-900 uppercase tracking-wide">5개 블로그별 자동 포스팅 스케줄 시간표</h2>
                     </div>
-                    <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-[11px] text-slate-300 h-48 overflow-y-auto space-y-1">
+                    <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                        {% for job in scheduled_jobs %}
+                        <div class="flex items-center justify-between p-2.5 bg-slate-50/80 border border-slate-200/70 rounded-xl text-xs hover:bg-slate-100/70 transition">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2 h-2 rounded-full bg-indigo-500" aria-hidden="true"></span>
+                                <span class="font-bold text-slate-800">{{ job.name }}</span>
+                            </div>
+                            <div class="text-slate-500 font-mono text-[11px] bg-white px-2 py-0.5 rounded-lg border border-slate-200 tabular-nums">
+                                다음 실행: {{ job.next_run }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-3 pt-2 border-t border-slate-100">
+                    ⏱️ 매일 지정된 시간에 5개 블로그가 15분 간격으로 순차 자동 발행됩니다.
+                </p>
+            </div>
+
+            <!-- Right 7 Cols: Real-time Live System Log Viewer with Auto-Scroll & Polling -->
+            <div class="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-terminal" aria-hidden="true"></i>
+                            </div>
+                            <h2 class="text-xs font-black text-slate-900 uppercase tracking-wide">실시간 포스팅 & 시스템 로그 (라이브 뷰어)</h2>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <!-- Live Streaming Indicator -->
+                            <span id="logLiveBadge" class="inline-flex items-center space-x-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" aria-hidden="true"></span>
+                                <span>라이브 모니터링 ON</span>
+                            </span>
+                            <!-- Manual Fetch Button -->
+                            <button onclick="fetchLatestLogs(true)" aria-label="로그 즉시 새로고침" class="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition" title="로그 새로고침">
+                                <i class="fa-solid fa-rotate text-xs" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Style Log Box with Auto-scroll -->
+                    <div id="liveLogBox" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 font-mono text-[11px] text-slate-300 h-64 overflow-y-auto space-y-1 shadow-inner break-all select-text">
                         {% if logs %}
                             {% for log in logs %}
-                            <div class="leading-relaxed">{{ log }}</div>
+                            <div class="leading-relaxed log-entry">{{ log }}</div>
                             {% endfor %}
                         {% else %}
-                            <div class="text-slate-500">로그 기록이 없습니다.</div>
+                            <div class="text-slate-500">실시간 로그를 대기 중입니다...</div>
                         {% endif %}
                     </div>
+                </div>
+
+                <div class="flex items-center justify-between text-[11px] text-slate-400 mt-2.5 pt-2 border-t border-slate-100">
+                    <span id="logLastUpdated">마지막 갱신: 방금 전</span>
+                    <label class="flex items-center space-x-1.5 cursor-pointer">
+                        <input type="checkbox" id="autoScrollCheck" checked class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        <span>새 로그 발생 시 자동 스크롤</span>
+                    </label>
                 </div>
             </div>
         </div>
 
     </main>
 
-    <!-- Client Script for Trigger Post -->
+    <!-- Client Scripts -->
     <script>
+        // Pagination & Filter State
+        let currentFilter = 'all';
+        let currentPage = 1;
+        const pageSize = 10;
+
+        function updateTableDisplay() {
+            const allRows = Array.from(document.querySelectorAll('.post-row'));
+            
+            // 1. Filter rows
+            const matchingRows = allRows.filter(row => {
+                const blogId = row.getAttribute('data-blog-id');
+                return (currentFilter === 'all' || blogId === currentFilter);
+            });
+
+            const totalMatching = matchingRows.length;
+            const totalPages = Math.max(1, Math.ceil(totalMatching / pageSize));
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            // 2. Hide all rows first
+            allRows.forEach(r => r.style.display = 'none');
+
+            // 3. Show only current page matching rows
+            const startIdx = (currentPage - 1) * pageSize;
+            const endIdx = startIdx + pageSize;
+            const visibleRows = matchingRows.slice(startIdx, endIdx);
+
+            visibleRows.forEach(r => r.style.display = '');
+
+            // 4. Update Info Text
+            const infoEl = document.getElementById('paginationInfo');
+            const startDisplay = totalMatching > 0 ? startIdx + 1 : 0;
+            const endDisplay = Math.min(endIdx, totalMatching);
+            infoEl.innerHTML = `총 <span class="font-bold text-slate-700 tabular-nums">${totalMatching}</span>개 중 <span class="font-bold text-blue-600 tabular-nums">${startDisplay}-${endDisplay}</span>개 표시 (페이지 <span class="tabular-nums">${currentPage}/${totalPages}</span>)`;
+
+            // 5. Render Pagination Buttons
+            const btnContainer = document.getElementById('paginationButtons');
+            btnContainer.innerHTML = '';
+
+            if (totalPages > 1) {
+                // Prev button
+                const prevBtn = document.createElement('button');
+                prevBtn.setAttribute('aria-label', '이전 페이지');
+                prevBtn.innerHTML = '<i class="fa-solid fa-chevron-left" aria-hidden="true"></i>';
+                prevBtn.className = `px-2 py-1 rounded-lg text-xs font-bold border transition focus-visible:ring-2 focus-visible:ring-blue-500 outline-none ${currentPage === 1 ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 cursor-pointer shadow-2xs'}`;
+                prevBtn.disabled = (currentPage === 1);
+                prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; updateTableDisplay(); } };
+                btnContainer.appendChild(prevBtn);
+
+                // Page Number Buttons
+                for (let p = 1; p <= totalPages; p++) {
+                    const pBtn = document.createElement('button');
+                    pBtn.innerText = p;
+                    if (p === currentPage) {
+                        pBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-600 text-white shadow-xs cursor-default tabular-nums';
+                    } else {
+                        pBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition cursor-pointer shadow-2xs tabular-nums focus-visible:ring-2 focus-visible:ring-blue-500 outline-none';
+                        pBtn.onclick = () => { currentPage = p; updateTableDisplay(); };
+                    }
+                    btnContainer.appendChild(pBtn);
+                }
+
+                // Next button
+                const nextBtn = document.createElement('button');
+                nextBtn.setAttribute('aria-label', '다음 페이지');
+                nextBtn.innerHTML = '<i class="fa-solid fa-chevron-right" aria-hidden="true"></i>';
+                nextBtn.className = `px-2 py-1 rounded-lg text-xs font-bold border transition focus-visible:ring-2 focus-visible:ring-blue-500 outline-none ${currentPage === totalPages ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200' : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200 cursor-pointer shadow-2xs'}`;
+                nextBtn.disabled = (currentPage === totalPages);
+                nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; updateTableDisplay(); } };
+                btnContainer.appendChild(nextBtn);
+            }
+        }
+
+        // Filter Posts by Blog ID
+        function filterPosts(blogId) {
+            currentFilter = blogId;
+            currentPage = 1;
+
+            document.querySelectorAll('.post-filter-btn').forEach(btn => {
+                if (btn.getAttribute('data-filter') === blogId) {
+                    btn.className = 'post-filter-btn active bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-xs transition whitespace-nowrap flex-shrink-0 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none';
+                } else {
+                    btn.className = 'post-filter-btn bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold px-2.5 py-1.5 rounded-lg transition whitespace-nowrap flex-shrink-0 focus-visible:ring-2 focus-visible:ring-slate-400 outline-none';
+                }
+            });
+
+            updateTableDisplay();
+        }
+
+        // Real-Time Log Fetcher with Color Syntax Highlighting
+        let isPostingActive = false;
+
+        function formatLogLine(line) {
+            if (!line) return '';
+            let formatted = line;
+            if (formatted.includes('[INFO]')) {
+                formatted = formatted.replace('[INFO]', '<span class="text-blue-400 font-bold">[INFO]</span>');
+            } else if (formatted.includes('[WARNING]')) {
+                formatted = formatted.replace('[WARNING]', '<span class="text-amber-400 font-bold">[WARNING]</span>');
+            } else if (formatted.includes('[ERROR]')) {
+                formatted = formatted.replace('[ERROR]', '<span class="text-rose-400 font-bold">[ERROR]</span>');
+            }
+            if (formatted.includes('완료') || formatted.includes('100%') || formatted.includes('성공')) {
+                formatted = `<span class="text-emerald-300 font-semibold">${formatted}</span>`;
+            }
+            return `<div class="leading-relaxed font-mono">${formatted}</div>`;
+        }
+
+        async function fetchLatestLogs(manual = false) {
+            try {
+                const res = await fetch('/api/logs?limit=40');
+                const data = await res.json();
+                if (data.logs && Array.isArray(data.logs)) {
+                    const logBox = document.getElementById('liveLogBox');
+                    const updatedText = document.getElementById('logLastUpdated');
+                    const autoScroll = document.getElementById('autoScrollCheck').checked;
+
+                    logBox.innerHTML = data.logs.map(line => formatLogLine(line)).join('');
+                    
+                    const now = new Date();
+                    const timeStr = now.toTimeString().split(' ')[0];
+                    if (updatedText) updatedText.innerText = `마지막 갱신: ${timeStr}`;
+
+                    if (autoScroll) {
+                        logBox.scrollTop = logBox.scrollHeight;
+                    }
+                }
+            } catch (e) {
+                console.warn('Log polling error:', e);
+            }
+        }
+
+        // Polling loop: 5 seconds normally, 1 second when active
+        setInterval(() => {
+            fetchLatestLogs();
+        }, isPostingActive ? 1000 : 4000);
+
+        // Save AI Article Quality Options
+        async function saveQualityOptions() {
+            const badge = document.getElementById('qualitySaveBadge');
+            const wordCountVal = document.getElementById('qualityWordCount').value;
+            let minWords = 2500, maxWords = 3500;
+            if (wordCountVal === '1500_2500') { minWords = 1500; maxWords = 2500; }
+            else if (wordCountVal === '3500_5000') { minWords = 3500; maxWords = 5000; }
+
+            const headingsVal = document.getElementById('qualityHeadings').value;
+            const toneVal = document.getElementById('qualityTone').value;
+            const addSummary = document.getElementById('checkSummaryCard').checked;
+            const addTable = document.getElementById('checkTable').checked;
+            const addFaq = document.getElementById('checkFaq').checked;
+
+            try {
+                const res = await fetch('/api/set-quality', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        min_word_count: minWords,
+                        max_word_count: maxWords,
+                        heading_count: headingsVal,
+                        tone_style: toneVal,
+                        add_summary_card: addSummary,
+                        add_table: addTable,
+                        add_faq: addFaq
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (badge) {
+                        badge.classList.remove('hidden');
+                        setTimeout(() => badge.classList.add('hidden'), 2500);
+                    }
+                }
+            } catch (err) {
+                console.error('Quality save error:', err);
+            }
+        }
+
+        // Change AI Model dynamically
+        async function changeAiModel(selectedModel) {
+            const badge = document.getElementById('modelChangeBadge');
+            try {
+                const res = await fetch('/api/set-model', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model_name: selectedModel })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    badge.innerText = '변경 완료!';
+                    badge.classList.remove('hidden');
+                    setTimeout(() => badge.classList.add('hidden'), 2500);
+                } else {
+                    alert('모델 변경 실패: ' + data.error);
+                }
+            } catch (err) {
+                alert('모델 변경 중 오류: ' + err.message);
+            }
+        }
+
+        // Trigger Post with Live Log Fast Polling
         async function triggerPost() {
             const blogId = document.getElementById('selectBlog').value;
             const isDraft = document.querySelector('input[name="postMode"]:checked').value === 'draft';
@@ -296,8 +786,13 @@
 
             btn.disabled = true;
             btn.classList.add('opacity-50', 'cursor-not-allowed');
-            btnText.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> AI 글 작성 & 썸네일 & 티스토리 포스팅 중... (약 15~30초 소요)';
+            btnText.innerHTML = '<i class="fa-solid fa-spinner animate-spin" aria-hidden="true"></i> AI 기획 & 포스팅 생성 중... (아래 실시간 로그 확인)';
             resultBox.classList.add('hidden');
+
+            isPostingActive = true;
+            const fastLogInterval = setInterval(() => {
+                fetchLatestLogs();
+            }, 1000);
 
             try {
                 const response = await fetch('/api/trigger-post', {
@@ -306,26 +801,124 @@
                     body: JSON.stringify({ blog_id: blogId, is_draft: isDraft })
                 });
                 const data = await response.json();
-
                 resultBox.classList.remove('hidden');
+
                 if (data.success) {
-                    resultBox.className = 'mt-3 p-2.5 rounded-lg text-xs bg-emerald-950 border border-emerald-500/40 text-emerald-300';
-                    resultBox.innerHTML = `✅ <b>성공:</b> ${data.title} (${data.status})<br>3초 후 새로고침됩니다.`;
-                    setTimeout(() => location.reload(), 3000);
+                    resultBox.className = 'mt-2.5 p-2.5 rounded-xl text-xs bg-emerald-50 border border-emerald-300 text-emerald-800 font-medium flex items-center justify-between';
+                    resultBox.innerHTML = `
+                        <div class="flex items-center space-x-1.5">
+                            <span>✅ <b>${data.status === 'PUBLISHED' ? '공개 발행 완료' : '임시 저장 완료'}:</b> ${data.title}</span>
+                        </div>
+                        <a href="${data.url}" target="_blank" class="underline font-bold text-emerald-900 ml-2">확인하기</a>
+                    `;
+                    setTimeout(() => location.reload(), 4000);
                 } else {
-                    resultBox.className = 'mt-3 p-2.5 rounded-lg text-xs bg-red-950 border border-red-500/40 text-red-300';
+                    resultBox.className = 'mt-2.5 p-2.5 rounded-xl text-xs bg-rose-50 border border-rose-300 text-rose-800 font-medium';
                     resultBox.innerHTML = `❌ <b>오류:</b> ${data.error || '포스팅 실패'}`;
                 }
             } catch (err) {
                 resultBox.classList.remove('hidden');
-                resultBox.className = 'mt-3 p-2.5 rounded-lg text-xs bg-red-950 border border-red-500/40 text-red-300';
+                resultBox.className = 'mt-2.5 p-2.5 rounded-xl text-xs bg-rose-50 border border-rose-300 text-rose-800 font-medium';
                 resultBox.innerHTML = `❌ <b>네트워크 오류:</b> ${err.message}`;
             } finally {
+                clearInterval(fastLogInterval);
+                isPostingActive = false;
                 btn.disabled = false;
                 btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                btnText.innerHTML = '지금 즉시 포스팅 생성';
+                btnText.innerHTML = '<i class="fa-solid fa-paper-plane" aria-hidden="true"></i><span>지금 즉시 포스팅 생성</span>';
+                fetchLatestLogs();
             }
         }
+
+        // Checkbox & Deletion Actions
+        function toggleSelectAll(masterCheckbox) {
+            const visibleRows = document.querySelectorAll('#postsTableBody tr.post-row:not(.hidden)');
+            visibleRows.forEach(row => {
+                const cb = row.querySelector('.post-checkbox');
+                if (cb) cb.checked = masterCheckbox.checked;
+            });
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const checkedBoxes = document.querySelectorAll('.post-checkbox:checked');
+            const count = checkedBoxes.length;
+            const countSpan = document.getElementById('selectedCount');
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            const selectAll = document.getElementById('selectAllCheckbox');
+
+            if (countSpan) countSpan.innerText = count;
+            if (deleteBtn) {
+                if (count > 0) {
+                    deleteBtn.classList.remove('hidden');
+                    deleteBtn.classList.add('inline-flex');
+                } else {
+                    deleteBtn.classList.add('hidden');
+                    deleteBtn.classList.remove('inline-flex');
+                }
+            }
+
+            const totalVisibleCheckboxes = document.querySelectorAll('#postsTableBody tr.post-row:not(.hidden) .post-checkbox');
+            if (selectAll && totalVisibleCheckboxes.length > 0) {
+                selectAll.checked = (checkedBoxes.length === totalVisibleCheckboxes.length);
+            }
+        }
+
+        async function deleteSelectedPosts() {
+            const checkedBoxes = document.querySelectorAll('.post-checkbox:checked');
+            const postIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value)).filter(id => !isNaN(id));
+
+            if (postIds.length === 0) {
+                alert('삭제할 내역을 선택해주세요.');
+                return;
+            }
+
+            if (!confirm(`선택한 ${postIds.length}개의 발행 내역을 삭제하시겠습니까?`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/posts/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ post_ids: postIds })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('삭제 실패: ' + data.error);
+                }
+            } catch (err) {
+                alert('삭제 중 오류: ' + err.message);
+            }
+        }
+
+        async function deleteAllPosts() {
+            if (!confirm('발행 내역 전체를 비우시겠습니까? (DB 내역이 모두 초기화됩니다)')) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/posts/delete-all', {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('삭제 실패: ' + data.error);
+                }
+            } catch (err) {
+                alert('삭제 중 오류: ' + err.message);
+            }
+        }
+
+        // Initialize on Page Load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateTableDisplay();
+            fetchLatestLogs();
+        });
     </script>
 </body>
 </html>

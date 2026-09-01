@@ -1,144 +1,102 @@
 """
-High-CTR Blog Thumbnail Generator using Pillow
-Creates 1200x630 (16:9) blog thumbnails with Korean typography, badge, and gradient overlay.
+High-Resolution Preset Image Thumbnail Generator
+Selects aesthetically pleasing, relevant high-res curated photos (no text clutter)
+by theme category for maximum CTR and clean Unsplash/Pinterest-style blog aesthetics.
 """
 
 import os
-import textwrap
+import glob
+import shutil
+import random
 import logging
 from typing import Optional
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageOps
 
 logger = logging.getLogger(__name__)
 
-THUMBNAILS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "generated", "thumbnails")
+# Base directory for the project
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Category mapping from blog theme keywords to preset folders
+CATEGORY_MAPPINGS = {
+    "it_tech": ["it", "tech", "ai", "테크", "기기", "앱", "코딩", "자동화", "소프트웨어", "컴퓨터", "맥북", "생산성"],
+    "finance_money": ["금융", "재테크", "절세", "주식", "etf", "투자", "머니", "청년도약", "통장", "대출", "가계부", "종잣돈"],
+    "policy_life": ["정책", "지원금", "복지", "생활", "절약", "공과금", "k-패스", "청약", "지원", "청년월세", "국비지원"],
+    "wellness_health": ["웰니스", "건강", "식단", "다이어트", "영양제", "피로", "스트레칭", "홈트", "수면", "루틴", "간헐적"],
+    "growth_career": ["마인드", "자기계발", "커리어", "시간", "습관", "업무", "기획서", "도서", "독서", "이직", "동기부여"]
+}
 
 class ThumbnailGenerator:
-    def __init__(self, output_dir: str = THUMBNAILS_DIR):
-        self.output_dir = output_dir
-        os.makedirs(self.output_dir, exist_ok=True)
-        self.font_path = self._find_korean_font()
+    def __init__(
+        self, 
+        preset_base_dir: Optional[str] = None
+    ):
+        self.preset_base_dir = preset_base_dir or os.path.join(PROJECT_ROOT, "assets", "preset_thumbnails")
+        os.makedirs(self.preset_base_dir, exist_ok=True)
 
-    def _find_korean_font(self) -> Optional[str]:
-        candidates = [
-            "C:/Windows/Fonts/malgunbd.ttf", # Malgun Gothic Bold
-            "C:/Windows/Fonts/malgun.ttf",   # Malgun Gothic
-            "C:/Windows/Fonts/NanumGothicBold.ttf",
-            "C:/Windows/Fonts/NanumGothic.ttf",
-            "C:/Windows/Fonts/gulim.ttc",
-            "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf",
-            "/System/Library/Fonts/AppleSDGothicNeo.ttc"
-        ]
-        for path in candidates:
-            if os.path.exists(path):
-                return path
+    def _resolve_category(self, theme_name: str, blog_id: str = "") -> str:
+        """Map theme or blog_id to preset thumbnail category."""
+        # Check by blog ID first
+        if blog_id == "blog_1":
+            return "it_tech"
+        elif blog_id == "blog_2":
+            return "finance_money"
+        elif blog_id == "blog_3":
+            return "policy_life"
+        elif blog_id == "blog_4":
+            return "wellness_health"
+        elif blog_id == "blog_5":
+            return "growth_career"
+
+        # Check by theme text matching
+        theme_lower = (theme_name or "").lower()
+        for cat_key, keywords in CATEGORY_MAPPINGS.items():
+            for kw in keywords:
+                if kw in theme_lower:
+                    return cat_key
+
+        return random.choice(list(CATEGORY_MAPPINGS.keys()))
+
+    def get_preset_image(self, category: str) -> Optional[str]:
+        """Fetch a random high-quality curated photo directly from the category preset folder."""
+        cat_dir = os.path.join(self.preset_base_dir, category)
+        if not os.path.exists(cat_dir):
+            cat_dir = self.preset_base_dir
+
+        images = glob.glob(os.path.join(cat_dir, "*.jpg")) + \
+                 glob.glob(os.path.join(cat_dir, "*.jpeg")) + \
+                 glob.glob(os.path.join(cat_dir, "*.png"))
+
+        if images:
+            chosen = random.choice(images)
+            abs_chosen = os.path.abspath(chosen)
+            logger.info(f"선택된 프리셋 썸네일 원본: {abs_chosen} (카테고리: {category})")
+            return abs_chosen
         return None
-
-    def _create_gradient_background(self, width: int = 1200, height: int = 630) -> Image.Image:
-        base = Image.new("RGB", (width, height), color=(15, 23, 42)) # Slate 900
-        draw = ImageDraw.Draw(base)
-        for y in range(height):
-            # Gradient from deep slate-blue to dark indigo
-            r = int(15 + (y / height) * 20)
-            g = int(23 + (y / height) * 35)
-            b = int(42 + (y / height) * 75)
-            draw.line([(0, y), (width, y)], fill=(r, g, b))
-        return base
 
     def create_thumbnail(
         self,
-        title: str,
-        badge_text: str = "BLOG POST",
+        title: str = "",
+        badge_text: str = "",
+        theme_name: str = "",
+        blog_id: str = "",
         base_image_path: Optional[str] = None,
         filename_prefix: str = "thumb"
     ) -> str:
-        width, height = 1200, 630
+        """
+        Directly uses preset curated images from assets/preset_thumbnails without duplicate generation.
+        Returns the absolute file path of the chosen preset image.
+        """
+        category = self._resolve_category(theme_name or badge_text, blog_id=blog_id)
+        source_image_path = base_image_path or self.get_preset_image(category)
 
-        if base_image_path and os.path.exists(base_image_path):
-            try:
-                img = Image.open(base_image_path).convert("RGB")
-                # Center crop & resize to 1200x630
-                img_ratio = img.width / img.height
-                target_ratio = width / height
-                if img_ratio > target_ratio:
-                    new_width = int(img.height * target_ratio)
-                    offset = (img.width - new_width) // 2
-                    img = img.crop((offset, 0, offset + new_width, img.height))
-                else:
-                    new_height = int(img.width / target_ratio)
-                    offset = (img.height - new_height) // 2
-                    img = img.crop((0, offset, img.width, offset + new_height))
-                img = img.resize((width, height), Image.Resampling.LANCZOS)
-                
-                # Apply soft blur for readability
-                img = img.filter(ImageFilter.GaussianBlur(radius=2))
+        if source_image_path and os.path.exists(source_image_path):
+            return os.path.abspath(source_image_path)
 
-                # Add dark overlay for contrast
-                overlay = Image.new("RGBA", (width, height), (0, 0, 0, 140))
-                img = Image.alpha_composite(img.convert("RGBA"), overlay).convert("RGB")
-            except Exception as e:
-                logger.warning(f"Failed to process base image: {e}. Using gradient.")
-                img = self._create_gradient_background(width, height)
-        else:
-            img = self._create_gradient_background(width, height)
+        # Fallback: search any preset image
+        all_presets = glob.glob(os.path.join(self.preset_base_dir, "**", "*.jpg"), recursive=True) + \
+                      glob.glob(os.path.join(self.preset_base_dir, "**", "*.png"), recursive=True)
+        if all_presets:
+            return os.path.abspath(random.choice(all_presets))
 
-        draw = ImageDraw.Draw(img)
-
-        # Load Fonts
-        try:
-            if self.font_path:
-                badge_font = ImageFont.truetype(self.font_path, 32)
-                title_font = ImageFont.truetype(self.font_path, 54)
-            else:
-                badge_font = ImageFont.load_default()
-                title_font = ImageFont.load_default()
-        except Exception:
-            badge_font = ImageFont.load_default()
-            title_font = ImageFont.load_default()
-
-        # 1. Draw Category Badge
-        badge_text = f" {badge_text.strip()} "
-        badge_bbox = draw.textbbox((0, 0), badge_text, font=badge_font)
-        badge_w = badge_bbox[2] - badge_bbox[0] + 30
-        badge_h = badge_bbox[3] - badge_bbox[1] + 16
-        badge_x = 90
-        badge_y = 110
-
-        # Draw rounded rectangle for badge
-        draw.rounded_rectangle(
-            [badge_x, badge_y, badge_x + badge_w, badge_y + badge_h],
-            radius=12,
-            fill=(49, 130, 206) # Blue 500
-        )
-        draw.text(
-            (badge_x + 15, badge_y + 6),
-            badge_text,
-            fill=(255, 255, 255),
-            font=badge_font
-        )
-
-        # 2. Draw Title (Word-wrapped)
-        # Clean title (remove special clutter)
-        clean_title = title.replace("\"", "").replace("'", "")
-        wrapped_lines = textwrap.wrap(clean_title, width=17)
-        if len(wrapped_lines) > 3:
-            wrapped_lines = wrapped_lines[:3]
-            wrapped_lines[2] = wrapped_lines[2] + "..."
-
-        start_y = 210
-        line_height = 76
-        for i, line in enumerate(wrapped_lines):
-            y = start_y + (i * line_height)
-            # Text shadow
-            draw.text((92, y + 2), line, fill=(0, 0, 0), font=title_font)
-            draw.text((90, y), line, fill=(255, 255, 255), font=title_font)
-
-        # 3. Draw Bottom Accent Bar
-        draw.rectangle([90, height - 70, 250, height - 64], fill=(236, 201, 75)) # Gold / Yellow accent
-
-        # Save output
-        out_filename = f"{filename_prefix}_{int(os.path.getmtime(self.font_path) if self.font_path else 0)}_{os.getpid()}_{abs(hash(title)) % 10000}.jpg"
-        out_path = os.path.join(self.output_dir, out_filename)
-        img.save(out_path, "JPEG", quality=95)
-        logger.info(f"Thumbnail created at: {out_path}")
-        return out_path
+        raise FileNotFoundError(f"assets/preset_thumbnails 폴더에 사용 가능한 썸네일 이미지가 없습니다: {self.preset_base_dir}")

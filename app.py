@@ -4,8 +4,10 @@ FastAPI Web Dashboard and REST API Server for Tistory Multi-Blog Publisher
 
 import os
 import sys
+import yaml
+import asyncio
 import logging
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -38,6 +40,8 @@ from core.database import DatabaseManager
 from core.scheduler import MultiBlogScheduler
 from core.trend_collector import TrendCollector
 
+CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
+
 # Global singletons
 db = DatabaseManager()
 scheduler_runner = MultiBlogScheduler(use_background=True)
@@ -54,7 +58,11 @@ app = FastAPI(title="Tistory Multi-Blog Publisher Dashboard", lifespan=lifespan)
 
 # Static and Templates
 THUMBNAILS_DIR = os.path.join(BASE_DIR, "generated", "thumbnails")
+ASSETS_DIR = os.path.join(BASE_DIR, "assets")
 os.makedirs(THUMBNAILS_DIR, exist_ok=True)
+os.makedirs(ASSETS_DIR, exist_ok=True)
+
+app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
 app.mount("/static/thumbnails", StaticFiles(directory=THUMBNAILS_DIR), name="thumbnails")
 
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "web", "templates"))
@@ -63,30 +71,49 @@ class TriggerPostRequest(BaseModel):
     blog_id: str = "blog_1"
     is_draft: bool = False
 
+class UpdateModelRequest(BaseModel):
+    model_name: str
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard_home(request: Request):
     stats = db.get_dashboard_stats()
-    posts = db.get_all_posts(limit=50)
+    posts = db.get_all_posts(limit=200)
     blogs = scheduler_runner.config.get("blogs", [])
     trends = trend_collector.get_realtime_trends(limit=12)
     scheduled_jobs = scheduler_runner.get_scheduled_jobs_info()
+    current_model = scheduler_runner.config.get("ai", {}).get("text_model", "gemini-3.5-flash")
 
-    # Read last 15 log lines
+    # Map blogs by ID for instant lookup
+    blogs_map = {b["id"]: b for b in blogs}
+    enriched_posts = []
+    for p in posts:
+        p_dict = dict(p)
+        b_info = blogs_map.get(p_dict.get("blog_id"), {})
+        p_dict["blog_name"] = b_info.get("name", p_dict.get("blog_id"))
+        p_dict["blog_subdomain"] = b_info.get("subdomain", "")
+        enriched_posts.append(p_dict)
+
+    # Read last 20 log lines
     logs = []
     if os.path.exists(log_file):
         try:
             with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
-                logs = [line.strip() for line in f.readlines()[-15:]]
+                logs = [line.strip() for line in f.readlines()[-20:]]
         except Exception as e:
             logs = [f"Log reading note: {e}"]
+
+    quality_config = scheduler_runner.config.get("publishing", {})
 
     context = {
         "request": request,
         "stats": stats,
-        "posts": posts,
+        "posts": enriched_posts,
         "blogs": blogs,
+        "blogs_map": blogs_map,
         "trends": trends,
         "scheduled_jobs": scheduled_jobs,
+        "current_model": current_model,
+        "quality_config": quality_config,
         "logs": logs
     }
 
@@ -96,23 +123,140 @@ async def dashboard_home(request: Request):
         context=context
     )
 
+@app.get("/guide", response_class=HTMLResponse)
+async def guide_page(request: Request):
+    blogs = scheduler_runner.config.get("blogs", [])
+    adsense_cfg = scheduler_runner.config.get("adsense", {})
+    current_model = scheduler_runner.config.get("ai", {}).get("text_model", "gemini-3.5-flash")
+    scheduled_jobs = scheduler_runner.get_scheduled_jobs_info()
+    
+    context = {
+        "request": request,
+        "blogs": blogs,
+        "adsense": adsense_cfg,
+        "current_model": current_model,
+        "scheduled_jobs": scheduled_jobs
+    }
+    return templates.TemplateResponse(
+        request=request,
+        name="guide.html",
+        context=context
+    )
+
 @app.post("/api/trigger-post")
 async def trigger_post(req: TriggerPostRequest):
     try:
         logger.info(f"수동 포스팅 요청 수신: {req.blog_id} (임시저장={req.is_draft})")
-        result = scheduler_runner.run_blog_pipeline(blog_id=req.blog_id, is_draft_override=req.is_draft)
+        # Run Playwright Sync in separate worker thread to avoid asyncio event loop conflict
+        result = await asyncio.to_thread(
+            scheduler_runner.run_blog_pipeline,
+            blog_id=req.blog_id,
+            is_draft_override=req.is_draft
+        )
         return result
     except Exception as e:
         logger.error(f"포스팅 실행 중 에러 발생: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+class UpdateQualityRequest(BaseModel):
+    min_word_count: int = 2500
+    max_word_count: int = 3500
+    heading_count: str = "4_5"
+    tone_style: str = "friendly_expert"
+    add_table: bool = True
+    add_faq: bool = True
+    add_summary_card: bool = True
+
+@app.post("/api/set-quality")
+async def set_quality(req: UpdateQualityRequest):
+    try:
+        logger.info(f"글 품질 설정 업데이트 요청: {req.dict()}")
+        
+        # Update in-memory config
+        pub_cfg = scheduler_runner.config.setdefault("publishing", {})
+        pub_cfg["min_word_count"] = req.min_word_count
+        pub_cfg["max_word_count"] = req.max_word_count
+        pub_cfg["heading_count"] = req.heading_count
+        pub_cfg["tone_style"] = req.tone_style
+        pub_cfg["add_table"] = req.add_table
+        pub_cfg["add_faq"] = req.add_faq
+        pub_cfg["add_summary_card"] = req.add_summary_card
+        
+        # Update config.yaml file
+        if os.path.exists(CONFIG_PATH):
+            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f) or {}
+            c_pub = cfg.setdefault("publishing", {})
+            c_pub["min_word_count"] = req.min_word_count
+            c_pub["max_word_count"] = req.max_word_count
+            c_pub["heading_count"] = req.heading_count
+            c_pub["tone_style"] = req.tone_style
+            c_pub["add_table"] = req.add_table
+            c_pub["add_faq"] = req.add_faq
+            c_pub["add_summary_card"] = req.add_summary_card
+            with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+                yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False)
+                
+        return {"success": True, "message": "글 품질 및 생성 설정이 성공적으로 저장되었습니다."}
+    except Exception as e:
+        logger.error(f"품질 설정 변경 중 오류: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+@app.post("/api/set-model")
+async def set_model(req: UpdateModelRequest):
+    try:
+        model = req.model_name.strip()
+        logger.info(f"AI 텍스트 모델 변경 요청: {model}")
+        
+        # Update in-memory config
+        scheduler_runner.config.setdefault("ai", {})["text_model"] = model
+        
+        # Update config.yaml file
+        if os.path.exists(CONFIG_PATH):
+            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+                cfg = yaml.safe_load(f) or {}
+            cfg.setdefault("ai", {})["text_model"] = model
+            with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+                yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False)
+                
+        return {"success": True, "model": model, "message": f"AI 모델이 '{model}'(으)로 변경되었습니다."}
+    except Exception as e:
+        logger.error(f"모델 변경 중 오류: {e}")
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
 @app.get("/api/trends")
 async def get_trends():
     return trend_collector.get_realtime_trends(limit=15)
 
-@app.get("/api/posts")
-async def get_posts(blog_id: Optional[str] = None):
-    return db.get_all_posts(blog_id=blog_id, limit=50)
+@app.get("/api/logs")
+async def get_logs(limit: int = 50):
+    log_file = os.path.join(BASE_DIR, "data", "scheduler.log")
+    logs = []
+    if os.path.exists(log_file):
+        with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+            logs = [line.strip() for line in f.readlines() if line.strip()][-limit:]
+    return {"logs": logs}
+
+class DeletePostsRequest(BaseModel):
+    post_ids: List[int]
+
+@app.post("/api/posts/delete")
+async def delete_selected_posts(req: DeletePostsRequest):
+    try:
+        deleted_count = db.delete_posts(req.post_ids)
+        return {"success": True, "deleted_count": deleted_count}
+    except Exception as e:
+        logger.error(f"포스트 삭제 오류: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+@app.post("/api/posts/delete-all")
+async def delete_all_posts():
+    try:
+        deleted_count = db.delete_all_posts()
+        return {"success": True, "deleted_count": deleted_count}
+    except Exception as e:
+        logger.error(f"전체 포스트 삭제 오류: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
 if __name__ == "__main__":
     import uvicorn

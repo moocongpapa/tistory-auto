@@ -17,6 +17,10 @@ from core.gemini_client import GeminiClient
 from core.thumbnail import ThumbnailGenerator
 from core.tistory_bot import TistoryBot
 from core.trend_collector import TrendCollector
+from core.adsense import AdSenseManager
+from core.coupang_partners import CoupangPartnersManager
+from core.google_indexing import GoogleIndexingManager
+from core.internal_linker import InternalLinker
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +34,7 @@ class MultiBlogScheduler:
         self.gemini = GeminiClient()
         self.thumbnail_gen = ThumbnailGenerator()
         self.trend_collector = TrendCollector()
+        self.internal_linker = InternalLinker(self.db)
         headless = self.config.get("publishing", {}).get("headless", True)
         self.bot = TistoryBot(headless=headless)
         self.use_background = use_background
@@ -56,10 +61,23 @@ class MultiBlogScheduler:
 
         logger.info(f"=== Starting Auto-Posting Pipeline for [{blog_name} ({subdomain})] ===")
 
-        # 1. Select theme (random or rotation)
-        theme = random.choice(themes)
+        # 1. Smart Round-Robin Theme Rotation based on DB history
+        last_posts = self.db.get_posts_by_blog(blog_id, limit=1)
+        if last_posts and themes:
+            last_theme_name = last_posts[0].get("theme")
+            theme_names = [t.get("name") for t in themes]
+            if last_theme_name in theme_names:
+                curr_idx = theme_names.index(last_theme_name)
+                next_idx = (curr_idx + 1) % len(themes)
+                theme = themes[next_idx]
+            else:
+                theme = themes[0]
+        else:
+            theme = random.choice(themes)
+
         theme_name = theme.get("name")
         keywords = theme.get("keywords", [])
+        logger.info(f"선택된 순환 카테고리/테마: [{theme_name}]")
 
         # 2. Fetch live real-time trend keywords
         trend_keywords = self.trend_collector.get_trend_keywords_list(limit=8)
@@ -84,11 +102,13 @@ class MultiBlogScheduler:
 
         # 5. Generate SEO Article
         logger.info("Generating SEO-optimized HTML article with Gemini...")
+        quality_cfg = self.config.get("publishing", {})
         article = self.gemini.generate_article(
             theme_name=theme_name,
             keyword=selected_keyword,
             topic=selected_topic,
-            model=model_name
+            model=model_name,
+            quality_config=quality_cfg
         )
         title = article.get("title", f"{selected_keyword} 완벽 가이드")
         summary = article.get("summary", "")
@@ -96,20 +116,41 @@ class MultiBlogScheduler:
         tags = article.get("tags", [selected_keyword])
         image_prompt = article.get("thumbnail_image_prompt", "")
 
-        # 6. Generate Thumbnail Image
+        # 5-1. Inject Google AdSense Ads (Top, Mid, Bottom)
+        adsense_cfg = self.config.get("adsense", {})
+        if adsense_cfg.get("enabled", True):
+            ads_mgr = AdSenseManager(
+                pub_id=adsense_cfg.get("pub_id", "ca-pub-9856782529784947"),
+                enabled=adsense_cfg.get("enabled", True)
+            )
+            content_html = ads_mgr.inject_ads(content_html, slots=adsense_cfg)
+
+        # 5-2. Inject Coupang Partners Affiliate Product Recommendations (if configured)
+        coupang_mgr = CoupangPartnersManager()
+        if coupang_mgr.is_configured():
+            product_box = coupang_mgr.generate_product_box_html(selected_keyword)
+            if product_box:
+                content_html += product_box
+                logger.info(f"쿠팡 파트너스 추천 상품 박스 자동 주입 완료: '{selected_keyword}'")
+
+        # 5-3. Inject Internal Links (Related Posts for Higher Pageviews & Ad Impressions)
+        link_count = self.config.get("seo", {}).get("internal_link_count", 2)
+        if link_count > 0:
+            content_html = self.internal_linker.inject_internal_links(
+                html_content=content_html,
+                blog_id=blog_id,
+                current_keyword=selected_keyword,
+                count=link_count
+            )
+            logger.info(f"내부 관련 글 링크 박스 자동 주입 완료 (blog: {blog_id})")
+
+        # 6. Generate Clean High-Res Photo Thumbnail (Curated Preset Pool)
         thumbnail_path = None
         if self.config.get("publishing", {}).get("generate_thumbnail", True):
-            base_ai_img = None
-            if image_prompt:
-                img_out = os.path.join("generated", "temp_ai_base.jpg")
-                img_model = self.config.get("ai", {}).get("image_model", "imagen-3.0-generate-002")
-                if self.gemini.generate_image_visual(image_prompt, img_out, model=img_model):
-                    base_ai_img = img_out
-
             thumbnail_path = self.thumbnail_gen.create_thumbnail(
                 title=title,
-                badge_text=theme_name.split(" ")[0],
-                base_image_path=base_ai_img,
+                theme_name=theme_name,
+                blog_id=blog_id,
                 filename_prefix=f"{blog_id}_thumb"
             )
 
@@ -131,7 +172,11 @@ class MultiBlogScheduler:
         # 8. Record into Database
         relative_thumb = None
         if thumbnail_path:
-            relative_thumb = os.path.basename(thumbnail_path)
+            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            try:
+                relative_thumb = os.path.relpath(thumbnail_path, project_root).replace("\\", "/")
+            except Exception:
+                relative_thumb = os.path.basename(thumbnail_path)
 
         post_id = self.db.record_post(
             blog_id=blog_id,
@@ -145,6 +190,11 @@ class MultiBlogScheduler:
             status=post_result.get("status", "PUBLISHED"),
             post_url=post_result.get("url")
         )
+
+        # 9. Google Indexing API Fast Submission (if published)
+        if post_result.get("status") == "PUBLISHED" and post_result.get("url"):
+            indexing_mgr = GoogleIndexingManager()
+            indexing_mgr.request_indexing(post_result["url"])
 
         logger.info(f"Successfully completed! DB Post ID: {post_id}, URL: {post_result.get('url')}")
         return {

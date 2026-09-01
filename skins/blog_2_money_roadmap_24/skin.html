@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <title>[##_page_title_##]</title>
+  <meta name="title" content="[##_page_title_##] :: [##_title_##]" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, minimum-scale=1.0, maximum-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+  <link rel="alternate" type="application/rss+xml" title="[##_title_##]" href="[##_rss_url_##]" />
+  
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9856782529784947" crossorigin="anonymous"></script>
+
+  <!-- Pretendard Font -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/xeicon@2.3.3/xeicon.min.css">
+  
+  <link rel="stylesheet" href="./style.css" />
+  
+  <script src="//t1.daumcdn.net/tistory_admin/lib/jquery/jquery-1.12.4.min.js"></script>
+  <script src="//t1.daumcdn.net/tistory_admin/assets/skin/common/vh-check.min.js"></script>
+  <script> (function () { var test = vhCheck(); }()); </script>
+
+  <!-- Dark/Light Theme Init -->
+  <script>
+    (function () {
+      var currentTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', currentTheme);
+    })();
+  </script>
+</head>
+
+<body id="[##_body_id_##]" class="blog-money-roadmap [##_var_headerslogundisplay_##] [##_var_headerbannerdisplay_##] [##_var_listmore_##] [##_var_listmoremobile_##] <s_if_var_headerbannerimage>use-banner-wrp</s_if_var_headerbannerimage> <s_if_var_headersloguntitle>use-slogan-wrp</s_if_var_headersloguntitle> use-menu-[##_var_topnav_##]-wrp">
+
+  <s_t3>
+    <div id="wrap" class="wrap-[##_var_sidebartype_##]">
+
+      <!-- Header -->
+      <header class="header">
+        <div class="header-inner">
+          <div class="header-logo-row">
+            <h1 class="title-logo">
+              <a href="[##_blog_link_##]" title="[##_title_##]" class="link-logo">
+                <span class="logo-badge"><i class="xi-chart-line"></i> FINANCE 24</span>
+                <s_if_var_logoImage>
+                  <img src="[##_var_logoImage_##]" class="img-logo" alt="[##_title_##]">
+                </s_if_var_logoImage>
+                <s_not_var_logoImage>
+                  <span class="logo-text">[##_title_##]</span>
+                </s_not_var_logoImage>
+              </a>
+            </h1>
+
+            <div class="header-actions">
+              <button type="button" class="btn-theme-toggle" id="themeToggle" aria-label="테마 변경">
+                <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="5"></circle>
+                  <line x1="12" y1="1" x2="12" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="23"></line>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                  <line x1="1" y1="12" x2="3" y2="12"></line>
+                  <line x1="21" y1="12" x2="23" y2="12"></line>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+              </button>
+
+              <button type="button" class="button-menu" aria-label="메뉴 열기">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="16" viewBox="0 0 20 14">
+                  <path fill="currentColor" fill-rule="evenodd" d="M0 0h20v2H0V0zm0 6h20v2H0V6zm0 6h20v2H0v-2z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="header-nav-row">
+            <s_if_var_headersloguntitle>
+              <div class="area-slogun [##_var_topnav_##]">
+                <strong>[##_var_headersloguntitle_##]</strong>
+                <s_if_var_headersloguntext>
+                  <p>[##_var_headersloguntext_##]</p>
+                </s_if_var_headersloguntext>
+              </div>
+            </s_if_var_headersloguntitle>
+
+            <div class="area-gnb">
+              <nav class="[##_var_topnav_##]">
+                [##_blog_menu_##]
+              </nav>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      [##_revenue_list_upper_##]
+
+      <!-- Container -->
+      <div id="container">
+        <main class="main">
+          <div class="area-main">
+
+            <!-- Category & Search List -->
+            <div class="area-common">
+              <s_list>
+                <h2 class="title-search article-title-[##_list_style_##] title-border">
+                  <span class="archives-label"><i class="xi-filter"></i> 카테고리/검색: </span><b class="archives">[##_list_conform_##]</b> 
+                  <span class="list-count">([##_list_count_##])</span>
+                </h2>
+
+                <div class="article-list grid-[##_list_style_##]">
+                  <s_list_rep>
+                    <article class="article-type-common">
+                      <s_list_rep_thumbnail>
+                        <a href="[##_list_rep_link_##]" class="link-article-thumb">
+                          <div class="thumbnail-wrap">
+                            <img src="[##_list_rep_thumbnail_raw_url_##]" class="img-thumbnail" alt="[##_list_rep_title_text_##]" loading="lazy">
+                          </div>
+                        </a>
+                      </s_list_rep_thumbnail>
+
+                      <div class="article-content">
+                        <div class="card-badge"><i class="xi-won"></i> FINANCE ROADMAP</div>
+                        <a href="[##_list_rep_link_##]" class="link-article">
+                          <strong class="title">[##_list_rep_title_##]</strong>
+                          <p class="summary">[##_list_rep_summary_##]</p>
+                        </a>
+                        <div class="box-meta">
+                          <a href="[##_list_rep_category_link_##]" class="link-category">[##_list_rep_category_##]</a>
+                          <span class="date"><i class="xi-calendar"></i> [##_list_rep_regdate_##]</span>
+                          <span class="reply">
+                            <s_rp_count><i class="xi-comment-o"></i> [##_list_rep_rp_cnt_##]</s_rp_count>
+                          </span>
+                        </div>
+                      </div>
+                    </article>
+                  </s_list_rep>
+                </div>
+
+                <s_list_empty>
+                  <div class="box-no-search type-search">
+                    <i class="xi-search-no"></i>
+                    <p>검색 결과가 존재하지 않습니다.</p>
+                  </div>
+                </s_list_empty>
+              </s_list>
+            </div>
+
+            <!-- View Page -->
+            <div class="area-view">
+              <s_article_rep>
+                <s_permalink_article_rep>
+                  <!-- Article Header -->
+                  <div class="article-header <s_article_rep_thumbnail>has-bg</s_article_rep_thumbnail>" 
+                       <s_article_rep_thumbnail>style="background-image: url('https://img1.daumcdn.net/thumb/R1440x0/?scode=mtistory2&fname=[##_article_rep_thumbnail_raw_url_##]')"</s_article_rep_thumbnail>>
+                    <div class="article-header-overlay">
+                      <div class="inner-header">
+                        <div class="article-meta-wrap">
+                          <div class="article-category-badge">
+                            <a href="[##_article_rep_category_link_##]">[##_article_rep_category_##]</a>
+                          </div>
+                          <h1 class="title-article">[##_article_rep_title_##]</h1>
+                          <div class="article-info-bar">
+                            <span class="writer"><i class="xi-user-o"></i> [##_article_rep_author_##]</span>
+                            <span class="divider">•</span>
+                            <span class="date"><i class="xi-calendar"></i> [##_article_rep_date_##]</span>
+                            [##_s_ad_isolation_##]
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="article-view entry-content" id="article-view">
+                    [##_article_rep_desc_##]
+                  </div>
+
+                  <div class="article-footer">
+                    <s_tag_label>
+                      <div class="article-tag">
+                        <h3 class="title-footer"><i class="xi-tags"></i> 관련 태그</h3>
+                        <div class="box-tag">[##_tag_label_rep_##]</div>
+                      </div>
+                    </s_tag_label>
+
+                    <div class="article-page">
+                      <h3 class="title-footer">'[##_article_rep_category_##]' 카테고리의 다른 금융 정보</h3>
+                      <ul class="nav-links">
+                        <li class="prev-post">
+                          <s_article_prev>
+                            <a href="[##_article_prev_link_##]">
+                              <span class="nav-dir"><i class="xi-angle-left"></i> 이전 글</span>
+                              <strong>[##_article_prev_title_##]</strong>
+                            </a>
+                          </s_article_prev>
+                        </li>
+                        <li class="next-post">
+                          <s_article_next>
+                            <a href="[##_article_next_link_##]">
+                              <span class="nav-dir">다음 글 <i class="xi-angle-right"></i></span>
+                              <strong>[##_article_next_title_##]</strong>
+                            </a>
+                          </s_article_next>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div class="article-reply">
+                      <div class="area-reply">
+                        <s_rp>
+                          [##_comment_group_##]
+                        </s_rp>
+                      </div>
+                    </div>
+                  </div>
+                </s_permalink_article_rep>
+              </s_article_rep>
+
+              <!-- Paging -->
+              <s_paging>
+                <div class="area-paging">
+                  <a [##_prev_page_##] class="link_page link_prev [##_no_more_prev_##]"><span class="xi-angle-left"></span></a>
+                  <div class="paging_num">
+                    <s_paging_rep>
+                      <a [##_paging_rep_link_##] class="link_num">[##_paging_rep_link_num_##]</a>
+                    </s_paging_rep>
+                  </div>
+                  <a [##_next_page_##] class="link_page link_next [##_no_more_next_##]"><span class="xi-angle-right"></span></a>
+                </div>
+              </s_paging>
+            </div>
+          </div>
+
+          <!-- Sidebar -->
+          <aside class="area-aside">
+            <div class="aside-inner">
+              <s_sidebar>
+                <s_sidebar_element>
+                  <div class="box-profile">
+                    <div class="inner-box">
+                      <img src="[##_image_##]" class="img-profile" alt="프로필">
+                      <p class="tit-g">[##_title_##]</p>
+                      <p class="text-profile">[##_desc_##]</p>
+                      <div class="sub-btn-wrap">[##_subscription_button_##]</div>
+                      <div class="sidebar-reader-cta">
+                        <a href="/" class="reader-btn reader-btn-home"><i class="xi-home-o"></i> 전체 글 보기</a>
+                        <a href="/search" class="reader-btn reader-btn-search"><i class="xi-search"></i> 글 검색하기</a>
+                      </div>
+                    </div>
+                  </div>
+                </s_sidebar_element>
+              </s_sidebar>
+
+              <s_sidebar>
+                <s_sidebar_element>
+                  <div class="box-category">
+                    <h3 class="title-sidebar"><i class="xi-chart-pie"></i> 금융 로드맵 카테고리</h3>
+                    <nav class="category-nav">[##_category_list_##]</nav>
+                  </div>
+                </s_sidebar_element>
+
+                <s_sidebar_element>
+                  <div class="box-recent-tab">
+                    <ul class="tab-recent-nav">
+                      <li class="tab-button active" data-tab="tab-recent-list">최신 재테크</li>
+                      <li class="tab-button" data-tab="tab-popular-list">인기 투자글</li>
+                    </ul>
+                    <ul class="list-recent tab-content active" id="tab-recent-list">
+                      <s_rctps_rep>
+                        <li>
+                          <a href="[##_rctps_rep_link_##]" class="link-recent">
+                            <s_rctps_rep_thumbnail><div class="thumbnail" style="background-image:url('[##_rctps_rep_thumbnail_##]')"></div></s_rctps_rep_thumbnail>
+                            <div class="box-recent-content">
+                              <strong>[##_rctps_rep_title_##]</strong>
+                              <span class="date">[##_rctps_rep_date_##]</span>
+                            </div>
+                          </a>
+                        </li>
+                      </s_rctps_rep>
+                    </ul>
+                    <ul class="list-recent list-tab tab-content" id="tab-popular-list">
+                      <s_rctps_popular_rep>
+                        <li>
+                          <a href="[##_rctps_rep_link_##]" class="link-recent">
+                            <s_rctps_rep_thumbnail><div class="thumbnail" style="background-image:url('[##_rctps_rep_thumbnail_##]')"></div></s_rctps_rep_thumbnail>
+                            <div class="box-recent-content">
+                              <strong>[##_rctps_rep_title_##]</strong>
+                              <span class="date">[##_rctps_rep_date_##]</span>
+                            </div>
+                          </a>
+                        </li>
+                      </s_rctps_popular_rep>
+                    </ul>
+                  </div>
+                </s_sidebar_element>
+              </s_sidebar>
+            </div>
+          </aside>
+        </main>
+      </div>
+
+      [##_revenue_list_lower_##]
+
+      <footer id="footer">
+        <div class="inner-footer">
+          <div class="footer-info">
+            <p class="text-info">[##_var_footerCopyright_##]</p>
+            <address>Money Roadmap 24 - Smart Financial & Investment Guide</address>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </s_t3>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var themeToggle = document.getElementById('themeToggle');
+      if (themeToggle) {
+        themeToggle.addEventListener('click', function () {
+          var theme = document.documentElement.getAttribute('data-theme');
+          var newTheme = theme === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+        });
+      }
+
+      var wrap = document.getElementById('wrap');
+      var menuBtn = document.querySelector('.button-menu');
+      if (menuBtn && wrap) {
+        menuBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          wrap.classList.toggle('aside-open');
+        });
+        document.addEventListener('click', function (e) {
+          if (wrap.classList.contains('aside-open') && !e.target.closest('.area-aside') && !e.target.closest('.button-menu')) {
+            wrap.classList.remove('aside-open');
+          }
+        });
+      }
+
+      var tabButtons = document.querySelectorAll('.box-recent-tab .tab-button');
+      tabButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var tabId = this.getAttribute('data-tab');
+          document.querySelectorAll('.box-recent-tab .tab-button').forEach(function (b) { b.classList.remove('active'); });
+          document.querySelectorAll('.box-recent-tab .tab-content').forEach(function (c) { c.classList.remove('active'); });
+          this.classList.add('active');
+          var targetContent = document.getElementById(tabId);
+          if (targetContent) targetContent.classList.add('active');
+        });
+      });
+    });
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      try {
+        var adUnits = document.querySelectorAll(".adsbygoogle");
+        adUnits.forEach(function() { (adsbygoogle = window.adsbygoogle || []).push({}); });
+      } catch(e) {}
+    });
+  </script>
+</body>
+</html>
+

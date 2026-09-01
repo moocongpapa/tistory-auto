@@ -10,12 +10,22 @@ ENV/
 
 # Browser session data (Kakao/Tistory cookies)
 session_data/
+data/browser_sessions/
+data/browser_session/
+*browser_session*
+*browser_sessions*
+browser_sessions/
+browser_session/
 
 # Generated artifacts & logs
 generated/thumbnails/*
 !generated/thumbnails/.gitkeep
+static/thumbnails/*
+!static/thumbnails/.gitkeep
 data/*.db
 data/*.log
+data/*.html
+data/browser_sessions/
 
 # Python Cache
 __pycache__/
@@ -27,3 +37,12 @@ __pycache__/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Temp reference folders & debug screenshots
+temp_ref/
+temp_ref_repo/
+kakao_submit_state.png
+*.png
+!assets/**/*.png
+!blog_assets/**/*.png
+!web/**/*.png

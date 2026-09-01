@@ -1,0 +1,27 @@
+{
+  "blog_1": {
+    "name": "Smart Work Lab",
+    "subdomain": "smartwork-lab",
+    "categories": []
+  },
+  "blog_2": {
+    "name": "Money Roadmap 24",
+    "subdomain": "finance-roadmap-for-future",
+    "categories": []
+  },
+  "blog_3": {
+    "name": "정책 알리미 365",
+    "subdomain": "policy-finder365",
+    "categories": []
+  },
+  "blog_4": {
+    "name": "웰니스 루틴 연구소",
+    "subdomain": "wellness-routine",
+    "categories": []
+  },
+  "blog_5": {
+    "name": "Grow Mindset",
+    "subdomain": "billionaire1004",
+    "categories": []
+  }
+}
