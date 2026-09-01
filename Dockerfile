@@ -16,4 +16,4 @@ COPY . .
 EXPOSE 8000
 
 # Run FastAPI Web Dashboard + 24/7 Scheduler
-CMD ["python", "app.py"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
