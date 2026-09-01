@@ -176,6 +176,15 @@ class TistoryBot:
                 page.goto(editor_url, wait_until="domcontentloaded", timeout=30000)
                 time.sleep(2.5)
 
+            # Wait until TinyMCE editor is fully loaded (up to 15 seconds)
+            for wait_i in range(15):
+                editor_ready = page.evaluate("""() => !!(window.tinymce && window.tinymce.activeEditor)""")
+                if editor_ready:
+                    break
+                time.sleep(1)
+            else:
+                logger.warning("TinyMCE 에디터 로드 대기 시간 초과 (15초), 계속 진행 시도...")
+
             # Clean title to prevent any trailing debug numbers or symbols
             clean_title = re.sub(r"\s+\d{9,12}$", "", title).strip()
             clean_title = re.sub(r'[\"\']', '', clean_title).strip()
@@ -194,9 +203,16 @@ class TistoryBot:
             if thumbnail_path and os.path.exists(thumbnail_path):
                 abs_thumb = os.path.abspath(thumbnail_path)
                 logger.info(f"썸네일 이미지 첨부 및 대표 설정 중: {abs_thumb}")
-                for attempt in range(2):
+                for attempt in range(3):
                     try:
-                        with page.expect_file_chooser(timeout=8000) as fc_info:
+                        # Ensure editor is focused before triggering upload
+                        page.evaluate("""() => {
+                            const ed = window.tinymce && window.tinymce.activeEditor;
+                            if (ed) { ed.focus(); }
+                        }""")
+                        time.sleep(0.3)
+
+                        with page.expect_file_chooser(timeout=10000) as fc_info:
                             page.evaluate("""() => {
                                 const ed = window.tinymce && window.tinymce.activeEditor;
                                 if (ed) {
@@ -208,8 +224,8 @@ class TistoryBot:
                         
                         file_chooser = fc_info.value
                         file_chooser.set_files(abs_thumb)
-                        logger.info("카카오 CDN 이미지 업로드 완료 대기 중 (5초)...")
-                        time.sleep(5.0)
+                        logger.info("카카오 CDN 이미지 업로드 완료 대기 중 (6초)...")
+                        time.sleep(6.0)
 
                         # Verify image was inserted into TinyMCE content
                         uploaded_check = page.evaluate("""() => {
@@ -223,17 +239,13 @@ class TistoryBot:
                             logger.info("카카오 에디터 이미지 블록 생성 확인 완료!")
                             has_thumbnail_uploaded = True
 
-                        # Safely try clicking '대표' button if present (optional, since 1st image is auto-representative)
+                        # Safely try clicking '대표' button if present
                         try:
                             page.evaluate("""() => {
                                 try {
                                     const repBtn = document.querySelector('button.btn_represent, .btn_represent, button[aria-label*="대표"]');
-                                    if (repBtn) {
-                                        repBtn.click();
-                                    }
-                                } catch(err) {
-                                    console.log('Rep button click note:', err);
-                                }
+                                    if (repBtn) { repBtn.click(); }
+                                } catch(err) {}
                             }""")
                         except Exception:
                             pass
@@ -242,8 +254,13 @@ class TistoryBot:
                             logger.info("썸네일 첨부 및 대표 이미지 등록 성공!")
                             break
                     except Exception as e:
-                        logger.warning(f"썸네일 첨부 시도 {attempt + 1}/2 실패, 재시도 중: {e}")
-                        time.sleep(1.0)
+                        logger.warning(f"썸네일 첨부 시도 {attempt + 1}/3 실패, 재시도 중: {e}")
+                        time.sleep(1.5)
+                        # Re-focus editor before retry
+                        try:
+                            page.evaluate("() => { const ed = window.tinymce && window.tinymce.activeEditor; if (ed) ed.focus(); }")
+                        except Exception:
+                            pass
 
             # 5. Step 5: Inject HTML Content via TinyMCE (Preserving Thumbnail)
             logger.info(f"본문 HTML 안전 주입 중 (총 {len(content_html)}자)...")
