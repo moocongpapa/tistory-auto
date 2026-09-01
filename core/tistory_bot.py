@@ -472,9 +472,35 @@ class TistoryBot:
                     break
 
             if not final_url:
-                final_url = f"https://{subdomain}.tistory.com/manage/posts"
+                final_url = f"https://{subdomain}.tistory.com"
+            elif "/manage" in final_url:
+                # Extract exact public post URL from the top item in manage/posts list
+                try:
+                    time.sleep(1.2)
+                    exact_post_url = page.evaluate("""() => {
+                        const link = document.querySelector('.list_post li a.link_cont, .item_post a.link_cont, .list_post li a[href*="tistory.com/"]');
+                        if (link && link.href && !link.href.includes('/manage/')) {
+                            return link.href;
+                        }
+                        const editLink = document.querySelector('a.btn_post[href*="/manage/post/"]');
+                        if (editLink) {
+                            const match = editLink.href.match(/\\/manage\\/post\\/(\\d+)/);
+                            if (match) {
+                                return window.location.origin + '/' + match[1];
+                            }
+                        }
+                        return null;
+                    }""")
+                    if exact_post_url:
+                        final_url = exact_post_url
+                        logger.info(f"실제 공개 포스트 URL 추출 성공: {final_url}")
+                    else:
+                        final_url = f"https://{subdomain}.tistory.com"
+                except Exception as e:
+                    logger.debug(f"포스트 URL 추출 참고: {e}")
+                    final_url = f"https://{subdomain}.tistory.com"
 
-            time.sleep(2)
+            time.sleep(1)
             try:
                 context.storage_state(path=self.storage_state_file)
             except Exception:

@@ -16,9 +16,15 @@ class InternalLinker:
     def get_related_posts(self, blog_id: str, current_keyword: str = "", limit: int = 2) -> List[Dict[str, Any]]:
         """Fetch the most relevant recent published posts for the given blog."""
         try:
-            posts = self.db.get_posts_by_blog(blog_id, limit=15)
-            # Filter published posts with valid post_url
-            valid_posts = [p for p in posts if p.get("post_url") and p.get("status") == "PUBLISHED"]
+            posts = self.db.get_posts_by_blog(blog_id, limit=20)
+            # Filter published posts with valid public post_url (NEVER link to /manage or write pages)
+            valid_posts = []
+            for p in posts:
+                url = (p.get("post_url") or "").strip()
+                # Skip invalid or manage-related URLs
+                if not url or url == "#" or "/manage" in url or "/newpost" in url:
+                    continue
+                valid_posts.append(p)
             
             if not valid_posts:
                 return []
@@ -51,7 +57,9 @@ class InternalLinker:
         links_html = ""
         for post in related:
             title = post.get("title", "관련 추천 글")
-            url = post.get("post_url", "#")
+            url = post.get("post_url", "").strip()
+            if not url or "/manage" in url:
+                continue
             theme = post.get("theme", "추천")
             links_html += f"""
 <li style="margin-bottom: 10px; padding: 10px 14px; background: #f8fafc; border-radius: 8px; border-left: 3px solid #3b82f6; list-style: none;">
@@ -61,6 +69,8 @@ class InternalLinker:
   </a>
 </li>
 """
+        if not links_html.strip():
+            return html_content
 
         related_box = f"""
 <!-- Related Posts Internal Links Box (SEO & Pageview Booster) -->
