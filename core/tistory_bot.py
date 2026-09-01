@@ -388,42 +388,43 @@ class TistoryBot:
                 except Exception as e:
                     logger.debug(f"태그 입력: {e}")
 
-            # 8. Step 8: Final Publication (Public or Draft)
-            if is_draft:
-                logger.info("포스트 임시저장 실행 중...")
-                saved = False
-                for sel in ["#temp-save-btn", "button.btn_save", "button:has-text('임시저장')"]:
-                    try:
-                        btn = page.locator(sel).first
-                        if btn.is_visible():
-                            btn.click(timeout=3000, force=True)
-                            saved = True
-                            time.sleep(3)
-                            break
-                    except Exception:
-                        pass
-                if not saved:
-                    page.evaluate("() => { (document.querySelector('#temp-save-btn') || document.querySelector('.btn_save'))?.click(); }")
-                    time.sleep(3)
-                context.close()
-                browser.close()
-                return {"status": "DRAFT_SAVED", "url": f"https://{subdomain}.tistory.com/manage/posts"}
-
+            # 8. Step 8: Final Publication (Public or Private Draft)
+            mode_text = "비공개(임시저장)" if is_draft else "공개 발행(Public)"
+            logger.info(f"🚀 포스트 {mode_text} 실행 중...")
+            
+            # 8-1. Click '완료' button to open publish layer
+            pub_layer_btn = page.locator("#publish-layer-btn, button:has-text('완료'), button.btn_complete, button.btn-default:has-text('완료')").first
+            if pub_layer_btn.is_visible():
+                pub_layer_btn.click(timeout=5000, force=True)
+                logger.info("발행 레이어 오픈 ('완료' 클릭)")
             else:
-                logger.info("🚀 포스트 공개 발행(Public Publication) 실행 중...")
-                
-                # 8-1. Click '완료' button to open publish layer
-                pub_layer_btn = page.locator("#publish-layer-btn, button:has-text('완료'), button.btn_complete, button.btn-default:has-text('완료')").first
-                if pub_layer_btn.is_visible():
-                    pub_layer_btn.click(timeout=5000, force=True)
-                    logger.info("발행 레이어 오픈 ('완료' 클릭)")
-                else:
-                    page.evaluate("() => { (document.querySelector('#publish-layer-btn') || document.querySelector('.btn_complete') || document.querySelector('button.btn-default') || document.querySelector('button.btn_sub'))?.click(); }")
-                
-                time.sleep(1.5)
+                page.evaluate("() => { (document.querySelector('#publish-layer-btn') || document.querySelector('.btn_complete') || document.querySelector('button.btn-default') || document.querySelector('button.btn_sub'))?.click(); }")
+            
+            time.sleep(1.5)
 
-                # 8-2. Select '공개' option in layer & verify button says '공개발행'
-                try:
+            # 8-2. Select '비공개' or '공개' option in layer
+            try:
+                if is_draft:
+                    # Select '비공개' (Private)
+                    for _ in range(5):
+                        private_radio_label = page.locator("label[for='open0'], label:has-text('비공개')").first
+                        if private_radio_label.is_visible():
+                            private_radio_label.click(force=True)
+                            time.sleep(0.3)
+
+                        page.evaluate("""() => {
+                            const r = document.querySelector('input#open0') || document.querySelector('input[value=\"0\"]');
+                            if (r) {
+                                r.checked = true;
+                                r.dispatchEvent(new Event('change', { bubbles: true }));
+                                r.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                        }""")
+                        time.sleep(0.4)
+                        break
+                    logger.info("'비공개' 라디오 옵션 선택 완료")
+                else:
+                    # Select '공개' (Public)
                     for _ in range(5):
                         open_radio_label = page.locator("label[for='open20'], label:has-text('공개')").first
                         if open_radio_label.is_visible():
@@ -444,41 +445,47 @@ class TistoryBot:
                         if "공개발행" in pub_btn_txt or ("공개" in pub_btn_txt and "비공개" not in pub_btn_txt):
                             logger.info(f"'공개' 라디오 옵션 선택 및 확인 완료: '{pub_btn_txt}'")
                             break
-                except Exception as e:
-                    logger.debug(f"공개 라디오 선택: {e}")
+            except Exception as e:
+                logger.debug(f"라디오 옵션 선택: {e}")
 
-                time.sleep(0.8)
+            time.sleep(0.8)
 
-                # 8-3. Click final '발행' / '공개발행' submit button
-                final_btn = page.locator("#publish-btn, button.btn_publish, button:has-text('공개발행'), button[type='submit']:has-text('발행')").first
-                if final_btn.is_visible():
-                    final_btn.click(timeout=5000, force=True)
-                    logger.info("최종 '공개발행' 버튼 클릭 완료!")
-                else:
-                    page.evaluate("() => { (document.querySelector('#publish-btn') || document.querySelector('.btn_publish') || document.querySelector('button.btn_sub.btn_default'))?.click(); }")
-                    logger.info("JS evaluate로 최종 발행 버튼 클릭 실행")
+            # 8-3. Click final '발행' submit button
+            final_btn = page.locator("#publish-btn, button.btn_publish, button:has-text('발행'), button:has-text('공개발행'), button[type='submit']:has-text('발행')").first
+            if final_btn.is_visible():
+                final_btn.click(timeout=5000, force=True)
+                logger.info(f"최종 '{'비공개 저장' if is_draft else '공개발행'}' 버튼 클릭 완료!")
+            else:
+                page.evaluate("() => { (document.querySelector('#publish-btn') || document.querySelector('.btn_publish') || document.querySelector('button.btn_sub.btn_default'))?.click(); }")
+                logger.info("JS evaluate로 최종 발행 버튼 클릭 실행")
 
-                # 8-4. Wait for server response and redirection (CRITICAL)
-                logger.info("티스토리 서버 발행 완료 및 페이지 리디렉션 대기 중 (최대 15초)...")
-                final_url = None
-                for sec in range(15):
-                    time.sleep(1)
-                    curr_url = page.url
-                    # Check if redirected away from newpost editor to live post or manage page
-                    if "/manage/newpost" not in curr_url and ("tistory.com" in curr_url):
-                        final_url = curr_url
-                        logger.info(f"발행 완료 감지 ({sec+1}초 소요): {final_url}")
-                        break
+            # 8-4. Wait for server response and redirection (CRITICAL)
+            logger.info("티스토리 서버 발행 완료 및 페이지 리디렉션 대기 중 (최대 15초)...")
+            final_url = None
+            for sec in range(15):
+                time.sleep(1)
+                curr_url = page.url
+                # Check if redirected away from newpost editor to live post or manage page
+                if "/manage/newpost" not in curr_url and ("tistory.com" in curr_url):
+                    final_url = curr_url
+                    logger.info(f"발행 완료 감지 ({sec+1}초 소요): {final_url}")
+                    break
 
-                if not final_url:
-                    final_url = f"https://{subdomain}.tistory.com/manage/posts"
+            if not final_url:
+                final_url = f"https://{subdomain}.tistory.com/manage/posts"
 
-                time.sleep(2)
-                try:
-                    context.storage_state(path=self.storage_state_file)
-                except Exception:
-                    pass
-                context.close()
-                browser.close()
-                logger.info(f"🎉 티스토리 블로그 공개 발행 100% 성공! 최종 URL: {final_url}")
-                return {"status": "PUBLISHED", "url": final_url}
+            time.sleep(2)
+            try:
+                context.storage_state(path=self.storage_state_file)
+            except Exception:
+                pass
+
+            context.close()
+            browser.close()
+
+            post_status = "DRAFT_SAVED" if is_draft else "PUBLISHED"
+            logger.info(f"🎉 티스토리 블로그 {mode_text} 100% 성공! 최종 URL: {final_url}")
+            return {
+                "status": post_status,
+                "url": final_url
+            }
