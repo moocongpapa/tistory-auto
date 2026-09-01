@@ -2,8 +2,16 @@ FROM mcr.microsoft.com/playwright/python:v1.49.0-noble
 
 WORKDIR /app
 
-# Install Korean fonts for thumbnail generation
-RUN apt-get update && apt-get install -y --no-install-recommends     fonts-nanum     fonts-noto-cjk     && rm -rf /var/lib/apt/lists/*
+# Set Korea Standard Time (KST / UTC+9)
+ENV TZ=Asia/Seoul
+
+# Install Korean fonts and timezone data
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    fonts-nanum \
+    fonts-noto-cjk \
+    tzdata \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies
 COPY requirements.txt .

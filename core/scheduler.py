@@ -9,10 +9,13 @@ import yaml
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 import requests
+import zoneinfo
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
+
+KST = zoneinfo.ZoneInfo("Asia/Seoul")
 
 from core.database import DatabaseManager
 from core.gemini_client import GeminiClient
@@ -230,7 +233,7 @@ class MultiBlogScheduler:
 
             for st in schedule_times:
                 hour, minute = st.split(":")
-                trigger = CronTrigger(hour=int(hour), minute=int(minute))
+                trigger = CronTrigger(hour=int(hour), minute=int(minute), timezone=KST)
                 self.scheduler.add_job(
                     self.run_blog_pipeline,
                     trigger=trigger,
@@ -239,22 +242,33 @@ class MultiBlogScheduler:
                     name=f"[{blog_name}] 매일 {st}",
                     replace_existing=True
                 )
-                logger.info(f"Scheduled [{blog_name}] for daily execution at {st}")
+                logger.info(f"Scheduled [{blog_name}] for daily execution at {st} (KST)")
 
         # Add 5-minute Keep-Alive Ping Job for Render free-tier sleep prevention
         self.scheduler.add_job(
             self.ping_self,
-            trigger=IntervalTrigger(minutes=5),
+            trigger=IntervalTrigger(minutes=5, timezone=KST),
             id="keep_alive_ping",
             name="[Render Keep-Alive] 5분 주기 서버 활성 핑",
             replace_existing=True
         )
         logger.info("Registered 5-minute Keep-Alive Heartbeat job for Render sleep prevention.")
 
-    def get_scheduled_jobs_info(self) -> List[Dict[str, Any]]:
+    def get_scheduled_jobs_info(self, include_internal: bool = False) -> List[Dict[str, Any]]:
         jobs = []
         for job in self.scheduler.get_jobs():
-            next_run = job.next_run_time.strftime("%Y-%m-%d %H:%M:%S") if job.next_run_time else "-"
+            # If include_internal is False, hide internal keep_alive_ping for clean dashboard metric
+            if not include_internal and job.id == "keep_alive_ping":
+                continue
+
+            nrt = getattr(job, "next_run_time", None)
+            if nrt:
+                # Always convert to Korea Standard Time (KST / UTC+9)
+                kst_time = nrt.astimezone(KST) if hasattr(nrt, "astimezone") else nrt
+                next_run = kst_time.strftime("%Y-%m-%d %H:%M:%S")
+            else:
+                next_run = "-"
+
             jobs.append({
                 "id": job.id,
                 "name": job.name,
