@@ -424,31 +424,48 @@ class TistoryBot:
                         break
                     logger.info("'비공개' 라디오 옵션 선택 완료")
                 else:
-                    # Select '공개' (Public)
-                    for _ in range(5):
-                        open_radio_label = page.locator("label[for='open20'], label:has-text('공개')").first
-                        if open_radio_label.is_visible():
-                            open_radio_label.click(force=True)
-                            time.sleep(0.3)
+                    # Select '공개' (Public) - Ensure 100% public state before clicking submit
+                    for attempt in range(8):
+                        try:
+                            lbl = page.locator("label[for='open20'], label:has-text('공개')").first
+                            if lbl.is_visible():
+                                lbl.click(force=True)
+                        except Exception:
+                            pass
 
                         page.evaluate("""() => {
-                            const r = document.querySelector('input#open20') || document.querySelector('input[value=\"20\"]');
+                            const lbl = document.querySelector('label[for="open20"]');
+                            if (lbl) {
+                                lbl.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+                                lbl.click();
+                            }
+                            const r = document.querySelector('input#open20') || document.querySelector('input[value="20"]');
                             if (r) {
                                 r.checked = true;
                                 r.dispatchEvent(new Event('change', { bubbles: true }));
                                 r.dispatchEvent(new Event('input', { bubbles: true }));
+                                r.click();
                             }
                         }""")
                         time.sleep(0.4)
 
-                        pub_btn_txt = page.locator("#publish-btn").inner_text()
-                        if "공개발행" in pub_btn_txt or ("공개" in pub_btn_txt and "비공개" not in pub_btn_txt):
-                            logger.info(f"'공개' 라디오 옵션 선택 및 확인 완료: '{pub_btn_txt}'")
+                        pub_btn_txt = ""
+                        try:
+                            pub_btn_txt = page.locator("#publish-btn").inner_text(timeout=2000).strip()
+                        except Exception:
+                            pass
+
+                        # If button says '공개 발행' or '공개발행', we are 100% confident
+                        if "공개" in pub_btn_txt and "비공개" not in pub_btn_txt:
+                            logger.info(f"✅ '공개' 라디오 옵션 선택 및 확인 완료: '{pub_btn_txt}'")
                             break
+                        else:
+                            logger.warning(f"⚠️ 발행 버튼이 아직 '{pub_btn_txt}' 상태입니다. '공개' 전환 재시도 중 ({attempt+1}/8)...")
+                            time.sleep(0.4)
             except Exception as e:
                 logger.debug(f"라디오 옵션 선택: {e}")
 
-            time.sleep(0.8)
+            time.sleep(0.6)
 
             # 8-3. Click final '발행' submit button
             final_btn = page.locator("#publish-btn, button.btn_publish, button:has-text('발행'), button:has-text('공개발행'), button[type='submit']:has-text('발행')").first
