@@ -4,6 +4,7 @@ Automatically fetches related previous posts from SQLite DB and injects
 a high-CTR 'Related Articles' box into the blog post HTML before publishing.
 """
 
+import re
 import logging
 from typing import List, Dict, Any, Optional
 
@@ -16,15 +17,17 @@ class InternalLinker:
     def get_related_posts(self, blog_id: str, current_keyword: str = "", limit: int = 2) -> List[Dict[str, Any]]:
         """Fetch the most relevant recent published posts for the given blog."""
         try:
-            posts = self.db.get_posts_by_blog(blog_id, limit=20)
-            # Filter published posts with valid public post_url (NEVER link to /manage or write pages)
+            posts = self.db.get_posts_by_blog(blog_id, limit=30)
+            # Filter published posts with exact, valid individual post URLs (e.g. tistory.com/123 or tistory.com/entry/...)
             valid_posts = []
             for p in posts:
                 url = (p.get("post_url") or "").strip()
-                # Skip invalid or manage-related URLs
+                # Must not be a manage URL or general root domain
                 if not url or url == "#" or "/manage" in url or "/newpost" in url:
                     continue
-                valid_posts.append(p)
+                # Must contain post number or entry slug
+                if re.search(r"tistory\.com/\d+", url) or "/entry/" in url:
+                    valid_posts.append(p)
             
             if not valid_posts:
                 return []

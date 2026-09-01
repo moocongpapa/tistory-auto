@@ -488,12 +488,14 @@ class TistoryBot:
                     logger.info(f"발행 완료 감지 ({sec+1}초 소요): {final_url}")
                     break
 
-            if not final_url:
-                final_url = f"https://{subdomain}.tistory.com"
-            elif "/manage" in final_url:
-                # Extract exact public post URL from the top item in manage/posts list
+            # 8-5. Ensure Exact Individual Post URL (e.g. https://domain.tistory.com/123) is Captured
+            if not final_url or "/manage" in final_url or not re.search(r"tistory\.com/(\d+|entry/)", final_url):
                 try:
-                    time.sleep(1.2)
+                    manage_posts_url = f"https://{subdomain}.tistory.com/manage/posts"
+                    if "/manage/posts" not in page.url:
+                        page.goto(manage_posts_url, wait_until="domcontentloaded", timeout=20000)
+                    time.sleep(1.5)
+
                     exact_post_url = page.evaluate("""() => {
                         const link = document.querySelector('.list_post li a.link_cont, .item_post a.link_cont, .list_post li a[href*="tistory.com/"]');
                         if (link && link.href && !link.href.includes('/manage/')) {
@@ -508,9 +510,9 @@ class TistoryBot:
                         }
                         return null;
                     }""")
-                    if exact_post_url:
+                    if exact_post_url and re.search(r"tistory\.com/\d+", exact_post_url):
                         final_url = exact_post_url
-                        logger.info(f"실제 공개 포스트 URL 추출 성공: {final_url}")
+                        logger.info(f"🎯 실제 공개 포스트 고유 URL 추출 성공: {final_url}")
                     else:
                         final_url = f"https://{subdomain}.tistory.com"
                 except Exception as e:
