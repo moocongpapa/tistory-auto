@@ -240,6 +240,76 @@ class MultiBlogScheduler:
             })
         return sorted(jobs, key=lambda x: x["next_run"])
 
+    def get_daily_post_count(self) -> int:
+        """Returns the current configured daily post count per blog (3, 4, or 5)."""
+        return int(self.config.get("publishing", {}).get("daily_post_count", 3))
+
+    def update_daily_post_count(self, count: int) -> Dict[str, Any]:
+        """Update schedule times for 3, 4, or 5 daily posts per blog and reschedule jobs."""
+        if count not in [3, 4, 5]:
+            count = 3
+
+        # Preset schedule time maps for 3, 4, 5 posts per blog
+        SCHEDULE_PRESETS = {
+            3: {
+                "blog_1": ["06:30", "11:30", "17:30"],
+                "blog_2": ["06:45", "11:45", "17:45"],
+                "blog_3": ["07:00", "12:00", "18:00"],
+                "blog_4": ["07:15", "12:15", "18:15"],
+                "blog_5": ["07:30", "12:30", "18:30"],
+            },
+            4: {
+                "blog_1": ["06:30", "11:30", "15:30", "20:30"],
+                "blog_2": ["06:45", "11:45", "15:45", "20:45"],
+                "blog_3": ["07:00", "12:00", "16:00", "21:00"],
+                "blog_4": ["07:15", "12:15", "16:15", "21:15"],
+                "blog_5": ["07:30", "12:30", "16:30", "21:30"],
+            },
+            5: {
+                "blog_1": ["06:30", "10:00", "13:30", "17:00", "21:00"],
+                "blog_2": ["06:45", "10:15", "13:45", "17:15", "21:15"],
+                "blog_3": ["07:00", "10:30", "14:00", "17:30", "21:30"],
+                "blog_4": ["07:15", "10:45", "14:15", "17:45", "21:45"],
+                "blog_5": ["07:30", "11:00", "14:30", "18:00", "22:00"],
+            }
+        }
+
+        preset = SCHEDULE_PRESETS.get(count, SCHEDULE_PRESETS[3])
+
+        # Update in-memory config
+        if "publishing" not in self.config:
+            self.config["publishing"] = {}
+        self.config["publishing"]["daily_post_count"] = count
+
+        for b in self.config.get("blogs", []):
+            b_id = b.get("id")
+            if b_id in preset:
+                b["schedule_times"] = preset[b_id]
+
+        # Save to config.yaml file
+        try:
+            with open(self.config_path, "w", encoding="utf-8") as f:
+                yaml.safe_dump(self.config, f, allow_unicode=True, sort_keys=False)
+            logger.info(f"config.yaml 파일에 일일 {count}회 포스팅 스케줄 저장 완료")
+        except Exception as e:
+            logger.error(f"config.yaml 저장 실패: {e}")
+
+        # Reschedule jobs in APScheduler
+        try:
+            self.scheduler.remove_all_jobs()
+            self.register_jobs()
+            logger.info(f"스케줄러 작업 전체 재등록 완료 (일일 블로그당 {count}회, 총 {count * len(self.config.get('blogs', []))}회)")
+        except Exception as e:
+            logger.error(f"스케줄러 재등록 실패: {e}")
+
+        return {
+            "success": True,
+            "daily_post_count": count,
+            "total_daily_target": count * len(self.config.get("blogs", [])),
+            "jobs_count": len(self.scheduler.get_jobs())
+        }
+
     def start(self):
         self.register_jobs()
         self.scheduler.start()
+

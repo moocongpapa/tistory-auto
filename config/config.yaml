@@ -164,6 +164,7 @@ blogs:
     - 성공하는 사람들의 아침 습관 루틴 빌 게이츠 일론 머스크
     name: 성장 도서&마인드
 publishing:
+  daily_post_count: 3
   add_faq: true
   add_summary_card: true
   add_table: true

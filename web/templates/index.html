@@ -119,8 +119,8 @@
                 </div>
                 <div class="text-2xl font-black text-slate-900 tabular-nums">{{ stats.today_posts }} <span class="text-xs text-slate-400 font-medium">건</span></div>
                 <div class="text-[11px] text-slate-500 mt-1 flex items-center space-x-1">
-                    <span class="text-blue-600 font-bold">목표 15건</span>
-                    <span>(채널당 3회 자동)</span>
+                    <span id="statTargetPosts" class="text-blue-600 font-bold">목표 {{ (daily_post_count or 3) * blogs|length }}건</span>
+                    <span id="statTargetPerBlog">(채널당 {{ daily_post_count or 3 }}회 자동)</span>
                 </div>
             </div>
 
@@ -219,6 +219,21 @@
                     </div>
 
                     <div class="space-y-2.5 text-xs">
+                        <!-- Daily Post Count Selector (3 / 4 / 5 per blog) -->
+                        <div>
+                            <label for="dailyPostCount" class="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
+                                <span class="flex items-center space-x-1">
+                                    <span>⏰ 일일 블로그별 발행 횟수</span>
+                                </span>
+                                <span id="dailyScheduleTotalLabel" class="text-[10px] text-purple-600 font-bold bg-purple-50 px-1.5 py-0.5 rounded">총 {{ (daily_post_count or 3) * blogs|length }}건/일 (5개 블로그)</span>
+                            </label>
+                            <select id="dailyPostCount" onchange="saveScheduleCountOption()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus-visible:ring-2 focus-visible:ring-purple-500 outline-none shadow-2xs">
+                                <option value="3" {% if daily_post_count == 3 or not daily_post_count %}selected{% endif %}>🚀 하루 3회 (06:30 / 11:30 / 17:30) - 표준 권장</option>
+                                <option value="4" {% if daily_post_count == 4 %}selected{% endif %}>🔥 하루 4회 (06:30 / 11:30 / 15:30 / 20:30) - 고속 성장</option>
+                                <option value="5" {% if daily_post_count == 5 %}selected{% endif %}>⚡ 하루 5회 (06:30 / 10:00 / 13:30 / 17:00 / 21:00) - 최대 부스팅</option>
+                            </select>
+                        </div>
+
                         <!-- Word Count Target -->
                         <div>
                             <label for="qualityWordCount" class="text-[11px] font-bold text-slate-700 flex items-center justify-between mb-1">
@@ -713,6 +728,41 @@
         setInterval(() => {
             fetchLatestLogs();
         }, isPostingActive ? 1000 : 4000);
+
+        // Save Daily Schedule Post Count (3 / 4 / 5 times per blog)
+        async function saveScheduleCountOption() {
+            const count = parseInt(document.getElementById('dailyPostCount').value);
+            const badge = document.getElementById('qualitySaveBadge');
+            const totalLabel = document.getElementById('dailyScheduleTotalLabel');
+            const statTarget = document.getElementById('statTargetPosts');
+            const statPerBlog = document.getElementById('statTargetPerBlog');
+
+            try {
+                const res = await fetch('/api/update-daily-schedule-count', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ daily_post_count: count })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (totalLabel) totalLabel.innerText = `총 ${data.total_daily_target}건/일 (5개 블로그)`;
+                    if (statTarget) statTarget.innerText = `목표 ${data.total_daily_target}건`;
+                    if (statPerBlog) statPerBlog.innerText = `(채널당 ${count}회 자동)`;
+                    if (badge) {
+                        badge.innerText = `일 ${count}회 스케줄 적용!`;
+                        badge.classList.remove('hidden');
+                        setTimeout(() => {
+                            badge.classList.add('hidden');
+                            badge.innerText = '설정 저장됨!';
+                        }, 2500);
+                    }
+                } else {
+                    alert('스케줄 변경 실패: ' + data.error);
+                }
+            } catch (err) {
+                console.error('Schedule count save error:', err);
+            }
+        }
 
         // Save AI Article Quality Options
         async function saveQualityOptions() {

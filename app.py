@@ -103,6 +103,7 @@ async def dashboard_home(request: Request):
             logs = [f"Log reading note: {e}"]
 
     quality_config = scheduler_runner.config.get("publishing", {})
+    daily_post_count = scheduler_runner.get_daily_post_count()
 
     context = {
         "request": request,
@@ -114,6 +115,7 @@ async def dashboard_home(request: Request):
         "scheduled_jobs": scheduled_jobs,
         "current_model": current_model,
         "quality_config": quality_config,
+        "daily_post_count": daily_post_count,
         "logs": logs
     }
 
@@ -200,6 +202,18 @@ async def set_quality(req: UpdateQualityRequest):
         return {"success": True, "message": "글 품질 및 생성 설정이 성공적으로 저장되었습니다."}
     except Exception as e:
         logger.error(f"품질 설정 변경 중 오류: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+class UpdateScheduleCountRequest(BaseModel):
+    daily_post_count: int
+
+@app.post("/api/update-daily-schedule-count")
+async def update_daily_schedule_count(req: UpdateScheduleCountRequest):
+    try:
+        res = scheduler_runner.update_daily_post_count(req.daily_post_count)
+        return res
+    except Exception as e:
+        logger.error(f"일일 발행 횟수 변경 오류: {e}")
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
 @app.post("/api/set-model")
