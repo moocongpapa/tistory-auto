@@ -9,6 +9,8 @@ services:
     envVars:
       - key: PORT
         value: 8000
+      - key: HOST
+        value: 0.0.0.0
       - key: GEMINI_API_KEY
         sync: false
       - key: KAKAO_EMAIL

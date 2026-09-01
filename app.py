@@ -75,7 +75,7 @@ class TriggerPostRequest(BaseModel):
 class UpdateModelRequest(BaseModel):
     model_name: str
 
-@app.get("/", response_class=HTMLResponse)
+@app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def dashboard_home(request: Request):
     stats = db.get_dashboard_stats()
     posts = db.get_all_posts(limit=200)
@@ -239,8 +239,8 @@ async def set_model(req: UpdateModelRequest):
         logger.error(f"모델 변경 중 오류: {e}")
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
-@app.get("/api/health")
-@app.get("/ping")
+@app.api_route("/api/health", methods=["GET", "HEAD"])
+@app.api_route("/ping", methods=["GET", "HEAD"])
 async def health_check():
     return {
         "status": "healthy",
@@ -285,4 +285,7 @@ async def delete_all_posts():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", 8000))
+    logger.info(f"Starting server on {host}:{port}...")
+    uvicorn.run("app:app", host=host, port=port, proxy_headers=True, forwarded_allow_ips="*")
