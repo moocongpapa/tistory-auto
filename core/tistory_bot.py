@@ -192,64 +192,55 @@ class TistoryBot:
             # 4. Step 4: Attach Thumbnail First & Set as Representative
             has_thumbnail_uploaded = False
             if thumbnail_path and os.path.exists(thumbnail_path):
-                logger.info(f"썸네일 이미지 첨부 및 대표 설정 중: {thumbnail_path}")
+                abs_thumb = os.path.abspath(thumbnail_path)
+                logger.info(f"썸네일 이미지 첨부 및 대표 설정 중: {abs_thumb}")
                 for attempt in range(2):
                     try:
-                        # 1. Open Attach Toolbar Dropdown via MouseEvent dispatch
-                        page.evaluate("""() => {
-                            const attachBtn = document.querySelector('#attach-layer-btn') || 
-                                              document.querySelector('#attach-layer-btn-open') || 
-                                              document.querySelector('div[aria-label="첨부"]') || 
-                                              document.querySelector('.mce-i-tistory-attach')?.closest('div');
-                            if (attachBtn) {
-                                attachBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-                                attachBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
-                                attachBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-                            }
-                        }""")
-                        time.sleep(0.8)
-
-                        # 2. Click '사진' menu with expect_file_chooser
                         with page.expect_file_chooser(timeout=8000) as fc_info:
                             page.evaluate("""() => {
-                                const items = Array.from(document.querySelectorAll('.mce-menu-item, [role="menuitem"], .layer_attach li, .mce-menu-item-normal'));
-                                const photoItem = items.find(it => it.innerText && it.innerText.includes('사진'));
-                                if (photoItem) {
-                                    photoItem.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-                                    photoItem.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
-                                    photoItem.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-                                    photoItem.click();
+                                const ed = window.tinymce && window.tinymce.activeEditor;
+                                if (ed) {
+                                    ed.execCommand('KImageUpload');
+                                } else {
+                                    document.querySelector('#attach-image, .mce-i-image, #mceu_0-open')?.click();
                                 }
                             }""")
-
+                        
                         file_chooser = fc_info.value
-                        file_chooser.set_files(thumbnail_path)
-                        logger.info("카카오 CDN 이미지 업로드 대기 중...")
-                        time.sleep(4.5)
+                        file_chooser.set_files(abs_thumb)
+                        logger.info("카카오 CDN 이미지 업로드 완료 대기 중 (5초)...")
+                        time.sleep(5.0)
 
-                        # 3. Click '대표' Button
-                        rep_activated = page.evaluate("""() => {
+                        # Verify image was inserted into TinyMCE content
+                        uploaded_check = page.evaluate("""() => {
                             const ed = window.tinymce && window.tinymce.activeEditor;
-                            if (ed) {
-                                const figure = ed.dom.select('figure.imageblock')[0] || ed.dom.select('img')[0];
-                                if (figure) {
-                                    ed.selection.select(figure);
-                                    ed.fire('click');
-                                    ed.fire('nodeChange');
-                                }
-                            }
-                            const repBtn = document.querySelector('button.btn_represent, .btn_represent, button[aria-label*="대표"]');
-                            if (repBtn) {
-                                repBtn.click();
-                                return true;
-                            }
-                            return false;
+                            if (!ed) return false;
+                            const html = ed.getContent() || '';
+                            return html.includes('Image|') || html.includes('<figure') || html.includes('<img');
                         }""")
-                        if rep_activated:
-                            logger.info("대표 썸네일 뱃지 확정 완료!")
-                        has_thumbnail_uploaded = True
-                        time.sleep(0.5)
-                        break
+
+                        if uploaded_check:
+                            logger.info("카카오 에디터 이미지 블록 생성 확인 완료!")
+                            has_thumbnail_uploaded = True
+
+                        # Safely try clicking '대표' button if present (optional, since 1st image is auto-representative)
+                        try:
+                            page.evaluate("""() => {
+                                try {
+                                    const repBtn = document.querySelector('button.btn_represent, .btn_represent, button[aria-label*="대표"]');
+                                    if (repBtn) {
+                                        repBtn.click();
+                                    }
+                                } catch(err) {
+                                    console.log('Rep button click note:', err);
+                                }
+                            }""")
+                        except Exception:
+                            pass
+
+                        if has_thumbnail_uploaded:
+                            logger.info("썸네일 첨부 및 대표 이미지 등록 성공!")
+                            break
                     except Exception as e:
                         logger.warning(f"썸네일 첨부 시도 {attempt + 1}/2 실패, 재시도 중: {e}")
                         time.sleep(1.0)
@@ -261,8 +252,8 @@ class TistoryBot:
                 if (window.tinymce && window.tinymce.activeEditor) {
                     const ed = window.tinymce.activeEditor;
                     const currentContent = ed.getContent() || '';
-                    if (currentContent.includes('<figure') || currentContent.includes('<img')) {
-                        ed.setContent(currentContent + '<br>' + html, { format: 'html' });
+                    if (currentContent.includes('Image|') || currentContent.includes('<figure') || currentContent.includes('<img')) {
+                        ed.setContent(currentContent + '<br><br>' + html, { format: 'html' });
                     } else {
                         ed.setContent(html, { format: 'html' });
                     }
