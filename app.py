@@ -68,9 +68,9 @@ class DashboardAuthMiddleware(BaseHTTPMiddleware):
         username = os.environ.get("DASHBOARD_USERNAME", "admin")
         password = os.environ.get("DASHBOARD_PASSWORD", "").strip()
 
-        # Whitelist public routes (Render keep-alive ping and static assets)
+        # Whitelist public routes (Render keep-alive ping, PWA icons & manifest, and static assets)
         path = request.url.path
-        if path in ["/api/health", "/ping", "/favicon.ico"] or path.startswith("/static") or path.startswith("/assets"):
+        if path in ["/api/health", "/ping", "/favicon.ico", "/manifest.json", "/sw.js", "/apple-touch-icon.png", "/apple-touch-icon-precomposed.png"] or path.startswith("/static") or path.startswith("/assets"):
             return await call_next(request)
 
         # If DASHBOARD_PASSWORD is configured, require authentication
