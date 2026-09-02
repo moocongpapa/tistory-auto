@@ -526,27 +526,65 @@ class TistoryBot:
                     }""")
 
             # 8-5. Ensure Exact Individual Post URL (e.g. https://domain.tistory.com/123) is Captured
-            if not final_url or "/manage" in final_url or not re.search(r"tistory\.com/(\d+|entry/)", final_url):
+            if not final_url or "/manage" in final_url or not re.search(r"tistory\.com/(\d+|entry/[^/]+)/?$", final_url):
                 try:
                     manage_posts_url = f"https://{subdomain}.tistory.com/manage/posts"
                     if "/manage/posts" not in page.url:
                         page.goto(manage_posts_url, wait_until="domcontentloaded", timeout=20000)
-                    time.sleep(1.5)
+                    time.sleep(2)
 
-                    exact_post_url = page.evaluate("""() => {
-                        const link = document.querySelector('.list_post li a.link_cont, .item_post a.link_cont, .list_post li a[href*="tistory.com/"]');
-                        if (link && link.href && !link.href.includes('/manage/')) {
-                            return link.href;
-                        }
-                        const editLink = document.querySelector('a.btn_post[href*="/manage/post/"]');
-                        if (editLink) {
-                            const match = editLink.href.match(/\\/manage\\/post\\/(\\d+)/);
-                            if (match) {
-                                return window.location.origin + '/' + match[1];
+                    # Extract the exact newly created post ID by matching title or top item
+                    exact_post_url = page.evaluate("""(targetTitle) => {
+                        const items = document.querySelectorAll('.list_post li, .item_post');
+                        if (!items || items.length === 0) return null;
+
+                        // 1. Try to find the item that matches the title
+                        for (const item of items) {
+                            const titEl = item.querySelector('.link_cont, .tit_post, strong.tit');
+                            const titText = titEl ? titEl.innerText.trim() : '';
+                            
+                            // Check if title matches
+                            if (titText && targetTitle && (titText.includes(targetTitle.substring(0, 15)) || targetTitle.includes(titText.substring(0, 15)))) {
+                                // Extract view link
+                                const viewLink = item.querySelector('a.link_post, a.link_view, a[href*="tistory.com/"]:not([href*="manage"])');
+                                if (viewLink && viewLink.href && !viewLink.href.includes('/manage/')) {
+                                    return viewLink.href;
+                                }
+                                // Extract from edit link
+                                const editLink = item.querySelector('a[href*="/manage/post/"]');
+                                if (editLink) {
+                                    const m = editLink.href.match(/\\/manage\\/post\\/(\\d+)/);
+                                    if (m) return window.location.origin + '/' + m[1];
+                                }
+                                // Extract from checkbox ID (e.g. inpCheck123)
+                                const chk = item.querySelector('input[id^="inpCheck"]');
+                                if (chk && chk.id) {
+                                    const m = chk.id.match(/inpCheck(\\d+)/);
+                                    if (m) return window.location.origin + '/' + m[1];
+                                }
                             }
                         }
+
+                        // 2. Fallback to first item on top of manage/posts
+                        const topItem = items[0];
+                        const viewLink = topItem.querySelector('a.link_post, a.link_view, a[href*="tistory.com/"]:not([href*="manage"])');
+                        if (viewLink && viewLink.href && !viewLink.href.includes('/manage/')) {
+                            return viewLink.href;
+                        }
+                        const editLink = topItem.querySelector('a[href*="/manage/post/"]');
+                        if (editLink) {
+                            const m = editLink.href.match(/\\/manage\\/post\\/(\\d+)/);
+                            if (m) return window.location.origin + '/' + m[1];
+                        }
+                        const chk = topItem.querySelector('input[id^="inpCheck"]');
+                        if (chk && chk.id) {
+                            const m = chk.id.match(/inpCheck(\\d+)/);
+                            if (m) return window.location.origin + '/' + m[1];
+                        }
+
                         return null;
-                    }""")
+                    }""", clean_title)
+
                     if exact_post_url and re.search(r"tistory\.com/\d+", exact_post_url):
                         final_url = exact_post_url
                         logger.info(f"🎯 실제 공개 포스트 고유 URL 추출 성공: {final_url}")
