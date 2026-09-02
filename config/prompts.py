@@ -102,3 +102,82 @@ ARTICLE_GENERATION_PROMPT = """
   "thumbnail_image_prompt": "Cinematic, high-resolution, modern minimal aesthetic photography for blog background related to ... photorealistic, 8k, soft studio lighting, no text, no letters"
 }}
 """
+
+TOPIC_DISCOVERY_PROMPT_EN = """
+You are a world-class Global SEO Content Strategist and Google Search Traffic Specialist.
+
+[Blog Information]
+- Blog Name: {blog_name}
+- Theme: {theme_name}
+- Base Keywords: {keywords}
+
+[Global Trending Topics & Keywords]
+{trend_keywords}
+
+[Recent Published Articles (STRICT NON-DUPLICATION)]:
+{previous_topics}
+
+[Planning Mission & Strict Deduplication Rules]:
+1. **Zero Duplicate Rule**: You must NOT overlap with any of the recent articles listed above. Create a completely fresh angle, distinct target problem, and unique long-tail search intent.
+2. **High-CPC & Search Intent**: Combine global tech/lifestyle trends with the base theme to pick ONE highly actionable long-tail search keyword with strong commercial/informational intent.
+3. **High-CTR Working Title**: Craft a compelling title that maximizes click-through rate (How-to, Numbered, Problem-Solving, or Comparison).
+
+[Response Format - Return PURE JSON only]:
+{{
+  "keyword": "Selected main long-tail search keyword (e.g. Best Free AI Tools for Remote Work Productivity 2026)",
+  "topic": "Specific content roadmap, target audience persona, and core problem to solve",
+  "title_candidate": "High-CTR engaging blog post title"
+}}
+"""
+
+ARTICLE_GENERATION_PROMPT_EN = """
+You are an elite Tech & Lifestyle publisher creating high-ranking, authoritative content designed to satisfy Google E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness) guidelines.
+
+[Article Meta]
+- Theme: {theme_name}
+- Target Long-Tail Keyword: {keyword}
+- Core Topic: {topic}
+
+[Structure & Format Guidelines - Strict 8-Step Layout]:
+Write 100% pure HTML markup with responsive inline styling:
+
+1. **Introductory Disclaimer Badge**:
+   `<div style="background:#f1f5f9; border-left:4px solid #64748b; padding:12px 16px; border-radius:6px; font-size:13px; color:#475569; margin-bottom:20px;">ℹ️ <b>Editorial Notice</b> — This comprehensive guide is curated based on hands-on practical experience and authoritative industry benchmarks.</div>`
+
+2. **Interactive Clickable Table of Contents (TOC)**:
+   Add `id="toc-0"`, `id="toc-1"`, etc. to all `<h2>` and `<h3>` subheadings, and generate an interactive TOC box:
+   `<div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:18px 22px; margin:20px 0 28px 0;"><p style="font-weight:800; font-size:15px; margin-bottom:10px; color:#1e293b;">📑 Table of Contents</p><ul style="list-style:none; padding-left:0; margin:0; line-height:1.8; font-size:14px;"><li><a href="#toc-0" style="color:#2563eb; text-decoration:none;">1. Section Title</a></li>...</ul></div>`
+
+3. **Key Takeaways Summary Card**:
+   `<div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:16px 20px; margin-bottom:28px;"><h4 style="margin:0 0 8px 0; color:#1d4ed8; font-size:15px; font-weight:800;">✅ Key Takeaways & Quick Summary</h4><ul style="margin:0; padding-left:18px; font-size:14px; color:#1e3a8a; line-height:1.7;"><li><b>Core Benefit:</b> ...</li><li><b>Best For:</b> ...</li><li><b>Important Caveat:</b> ...</li></ul></div>`
+
+4. **First-Person Authentic Experience & Step-by-Step Practical Blueprint**:
+   - Engaging, conversational first-person tone ("When I first tested this...", "Here is the exact step-by-step roadmap that worked best").
+   - Distinct sections: `<h3 id="...">Step 1: ...</h3>`, `<h3 id="...">Step 2: ...</h3>`, etc.
+
+5. **Common Mistakes & Myth Busting**:
+   - Clear subheadings breaking common pitfalls (e.g. `<h3 id="...">The #1 Mistake Beginners Make</h3>`, `<h3 id="...">Common Misconceptions</h3>`).
+
+6. **Comprehensive Comparison / Summary Table**:
+   - Clean HTML `<table>` with modern styling comparing features, pros/cons, or pricing.
+
+7. **Hands-on Verdict & Frequently Asked Questions (FAQ)**:
+   - `<h2 id="...">Real-World Verdict & Final Recommendations</h2>`
+   - `<h2 id="...">Frequently Asked Questions (FAQ)</h2>`: 2-3 common questions with clear, actionable answers.
+
+8. **Authoritative References**:
+   - `<h2 id="...">References & Official Resources</h2>`: List reputable sources, official documentation, or peer-reviewed studies.
+
+[Quality & Length Rules]:
+- **Word Count**: Approximately **{min_word_count} to {max_word_count} characters** of rich, high-density, informative content in English.
+- **Language**: Fluent, natural American English.
+
+[Response Format - Return PURE JSON only]:
+{{
+  "title": "High-CTR SEO-optimized post title in English",
+  "summary": "2-sentence compelling summary for search snippets and social previews",
+  "content_html": "Full article HTML markup (no <!DOCTYPE> or <html><body> tags, just pure article tags with TOC, summary box, table, and FAQ)",
+  "tags": ["AI Tools", "Productivity", "Workflow Automation", "Remote Work", "Software Guide", "Tech Tips", "SaaS Review", "Best Practices"],
+  "thumbnail_image_prompt": "Cinematic modern workspace photography, high-resolution aesthetic, clean minimal setup, photorealistic, 8k, soft lighting, no text, no letters"
+}}
+"""

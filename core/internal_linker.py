@@ -55,15 +55,18 @@ class InternalLinker:
             logger.warning(f"Error fetching related posts for internal linking: {e}")
             return []
 
-    def inject_internal_links(self, html_content: str, blog_id: str, current_keyword: str = "", count: int = 2) -> str:
+    def inject_internal_links(self, html_content: str, blog_id: str, current_keyword: str = "", count: int = 2, language: str = "ko") -> str:
         """Inject a modern, responsive 'Together Reading / Related Posts' box into the article."""
         related = self.get_related_posts(blog_id, current_keyword, limit=count)
         if not related:
             return html_content
 
+        box_title = "📚 Helpful Related Guides & Recommended Reading" if language == "en" else "함께 읽으면 수익 &amp; 도움 되는 추천 글"
+        btn_text = "Read More &gt;" if language == "en" else "바로보기 &gt;"
+
         links_html = ""
         for post in related:
-            title = post.get("title", "관련 추천 글")
+            title = post.get("title", "Related Article" if language == "en" else "관련 추천 글")
             url = post.get("post_url", "").strip()
             if not url or "/manage" in url or not re.match(r"^https?://[a-zA-Z0-9-]+\.tistory\.com/(\d+|entry/[^/]+)/?$", url):
                 continue
@@ -71,7 +74,7 @@ class InternalLinker:
 <li style="margin-bottom: 10px; padding: 12px 16px; background: #f8fafc; border-radius: 8px; border-left: 3px solid #3b82f6; list-style: none;">
   <a href="{url}" style="color: #1e293b; text-decoration: none; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: space-between;" target="_blank" rel="noopener noreferrer">
     <span style="display: flex; align-items: center; gap: 6px;">📌 {title}</span>
-    <span style="font-size: 12px; color: #2563eb; font-weight: 700; margin-left: 12px; white-space: nowrap;">바로보기 &gt;</span>
+    <span style="font-size: 12px; color: #2563eb; font-weight: 700; margin-left: 12px; white-space: nowrap;">{btn_text}</span>
   </a>
 </li>
 """
@@ -82,7 +85,7 @@ class InternalLinker:
 <!-- Related Posts Internal Links Box (SEO & Pageview Booster) -->
 <div class="related-posts-box" style="margin: 35px 0 25px 0; padding: 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
   <h4 style="margin: 0 0 14px 0; font-size: 15px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 6px;">
-    <span>함께 읽으면 수익 &amp; 도움 되는 추천 글</span>
+    <span>{box_title}</span>
   </h4>
   <ul style="margin: 0; padding: 0;">
     {links_html}

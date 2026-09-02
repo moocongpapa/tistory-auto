@@ -13,7 +13,12 @@ from google.genai import types
 
 load_dotenv()
 
-from config.prompts import TOPIC_DISCOVERY_PROMPT, ARTICLE_GENERATION_PROMPT
+from config.prompts import (
+    TOPIC_DISCOVERY_PROMPT,
+    ARTICLE_GENERATION_PROMPT,
+    TOPIC_DISCOVERY_PROMPT_EN,
+    ARTICLE_GENERATION_PROMPT_EN,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -153,14 +158,16 @@ class GeminiClient:
         keywords: List[str],
         previous_topics: List[str],
         trend_keywords: Optional[List[str]] = None,
-        model: str = "gemini-3.5-flash"
+        model: str = "gemini-3.5-flash",
+        language: str = "ko"
     ) -> Dict[str, Any]:
         """Select a fresh, high-CTR long-tail topic combining static and real-time trends."""
         self._ensure_client()
-        prev_topics_str = "\n".join(previous_topics) if previous_topics else "(이전 포스팅 이력 없음)"
-        trends_str = ", ".join(trend_keywords) if trend_keywords else "(실시간 트렌드 정보 없음)"
+        prev_topics_str = "\n".join(previous_topics) if previous_topics else ("(No previous post history)" if language == "en" else "(이전 포스팅 이력 없음)")
+        trends_str = ", ".join(trend_keywords) if trend_keywords else ("(No real-time trends available)" if language == "en" else "(실시간 트렌드 정보 없음)")
 
-        prompt = TOPIC_DISCOVERY_PROMPT.format(
+        template = TOPIC_DISCOVERY_PROMPT_EN if language == "en" else TOPIC_DISCOVERY_PROMPT
+        prompt = template.format(
             blog_name=blog_name,
             theme_name=theme_name,
             keywords=", ".join(keywords),
@@ -174,11 +181,11 @@ class GeminiClient:
         except Exception as e:
             logger.error(f"주제 발굴 중 오류 발생, 기본 대체 주제 생성: {e}")
             import random
-            selected_kw = random.choice(keywords) if keywords else "핵심 가이드"
+            selected_kw = random.choice(keywords) if keywords else ("Practical Guide" if language == "en" else "핵심 가이드")
             return {
                 "keyword": selected_kw,
-                "topic": f"{theme_name} 관련 {selected_kw} 상세 활용 및 꿀팁",
-                "title_candidate": f"{selected_kw} 완벽 가이드: 꼭 알아야 할 핵심 혜택과 꿀팁"
+                "topic": f"Comprehensive walkthrough and best practices for {selected_kw}" if language == "en" else f"{theme_name} 관련 {selected_kw} 상세 활용 및 꿀팁",
+                "title_candidate": f"{selected_kw}: Complete Guide & Actionable Strategies" if language == "en" else f"{selected_kw} 완벽 가이드: 꼭 알아야 할 핵심 혜택과 꿀팁"
             }
 
     def generate_article(
@@ -187,7 +194,8 @@ class GeminiClient:
         keyword: str,
         topic: str,
         model: str = "gemini-3.5-flash",
-        quality_config: Optional[Dict[str, Any]] = None
+        quality_config: Optional[Dict[str, Any]] = None,
+        language: str = "ko"
     ) -> Dict[str, Any]:
         """Generate a full SEO-optimized HTML article with configurable quality options."""
         self._ensure_client()
@@ -217,18 +225,27 @@ class GeminiClient:
         table_instruction = "본문 중간에 수치/옵션 비교 HTML table 반드시 1개 이상 포함" if qc.get("add_table", True) else "필요 시 선택적 포함"
         faq_instruction = "본문 하단에 독자 주요 질문 FAQ 2~3개 및 명쾌한 답변 섹션 필수 포함" if qc.get("add_faq", True) else "선택적 포함"
 
-        prompt = ARTICLE_GENERATION_PROMPT.format(
-            theme_name=theme_name,
-            keyword=keyword,
-            topic=topic,
-            min_word_count=min_words,
-            max_word_count=max_words,
-            heading_instruction=heading_instruction,
-            tone_instruction=tone_instruction,
-            summary_card_instruction=summary_card_instruction,
-            table_instruction=table_instruction,
-            faq_instruction=faq_instruction
-        )
+        if language == "en":
+            prompt = ARTICLE_GENERATION_PROMPT_EN.format(
+                theme_name=theme_name,
+                keyword=keyword,
+                topic=topic,
+                min_word_count=min_words,
+                max_word_count=max_words
+            )
+        else:
+            prompt = ARTICLE_GENERATION_PROMPT.format(
+                theme_name=theme_name,
+                keyword=keyword,
+                topic=topic,
+                min_word_count=min_words,
+                max_word_count=max_words,
+                heading_instruction=heading_instruction,
+                tone_instruction=tone_instruction,
+                summary_card_instruction=summary_card_instruction,
+                table_instruction=table_instruction,
+                faq_instruction=faq_instruction
+            )
 
         try:
             raw_text = self._call_with_fallback(prompt, initial_model=model, temperature=0.7)

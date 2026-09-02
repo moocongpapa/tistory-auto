@@ -80,9 +80,8 @@ class MultiBlogScheduler:
         else:
             theme = random.choice(themes)
 
-        theme_name = theme.get("name")
-        keywords = theme.get("keywords", [])
-        logger.info(f"선택된 순환 카테고리/테마: [{theme_name}]")
+        language = blog_config.get("language", "ko")
+        logger.info(f"블로그 언어 설정: [{language.upper()}] | 선택된 테마: [{theme_name}]")
 
         # 2. Fetch live real-time trend keywords
         trend_keywords = self.trend_collector.get_trend_keywords_list(limit=8)
@@ -92,7 +91,7 @@ class MultiBlogScheduler:
         logger.info(f"기존 작성된 최근 {len(previous_topics)}개 글 내역과 중복 배제 필터링 적용 중...")
 
         # 4. Discover fresh topic with Gemini (combining trends + static keywords)
-        logger.info(f"Discovering fresh topic for theme: {theme_name}...")
+        logger.info(f"Discovering fresh topic for theme: {theme_name} ({language})...")
         model_name = self.config.get("ai", {}).get("text_model", "gemini-3.5-flash")
         topic_info = self.gemini.discover_topic(
             blog_name=blog_name,
@@ -100,23 +99,25 @@ class MultiBlogScheduler:
             keywords=keywords,
             previous_topics=previous_topics,
             trend_keywords=trend_keywords,
-            model=model_name
+            model=model_name,
+            language=language
         )
         selected_keyword = topic_info.get("keyword", "핵심 주제")
         selected_topic = topic_info.get("topic", f"{theme_name} 포스팅")
         logger.info(f"Selected Keyword (중복 배제 완료): {selected_keyword} | Topic: {selected_topic}")
 
         # 5. Generate SEO Article
-        logger.info("Generating SEO-optimized HTML article with Gemini...")
+        logger.info(f"Generating SEO-optimized HTML article with Gemini ({language})...")
         quality_cfg = self.config.get("publishing", {})
         article = self.gemini.generate_article(
             theme_name=theme_name,
             keyword=selected_keyword,
             topic=selected_topic,
             model=model_name,
-            quality_config=quality_cfg
+            quality_config=quality_cfg,
+            language=language
         )
-        title = article.get("title", f"{selected_keyword} 완벽 가이드")
+        title = article.get("title", f"{selected_keyword} Guide")
         summary = article.get("summary", "")
         content_html = article.get("content_html", "")
         tags = article.get("tags", [selected_keyword])
@@ -131,13 +132,14 @@ class MultiBlogScheduler:
             )
             content_html = ads_mgr.inject_ads(content_html, slots=adsense_cfg)
 
-        # 5-2. Inject Coupang Partners Affiliate Product Recommendations (if configured)
-        coupang_mgr = CoupangPartnersManager()
-        if coupang_mgr.is_configured():
-            product_box = coupang_mgr.generate_product_box_html(selected_keyword)
-            if product_box:
-                content_html += product_box
-                logger.info(f"쿠팡 파트너스 추천 상품 박스 자동 주입 완료: '{selected_keyword}'")
+        # 5-2. Inject Coupang Partners Affiliate Product Recommendations (Only for Korean Blogs)
+        if language == "ko":
+            coupang_mgr = CoupangPartnersManager()
+            if coupang_mgr.is_configured():
+                product_box = coupang_mgr.generate_product_box_html(selected_keyword)
+                if product_box:
+                    content_html += product_box
+                    logger.info(f"쿠팡 파트너스 추천 상품 박스 자동 주입 완료: '{selected_keyword}'")
 
         # 5-3. Inject Internal Links (Related Posts for Higher Pageviews & Ad Impressions)
         link_count = self.config.get("seo", {}).get("internal_link_count", 2)
@@ -146,9 +148,10 @@ class MultiBlogScheduler:
                 html_content=content_html,
                 blog_id=blog_id,
                 current_keyword=selected_keyword,
-                count=link_count
+                count=link_count,
+                language=language
             )
-            logger.info(f"내부 관련 글 링크 박스 자동 주입 완료 (blog: {blog_id})")
+            logger.info(f"내부 관련 글 링크 박스 자동 주입 완료 (blog: {blog_id}, lang: {language})")
 
         # 6. Generate Clean High-Res Photo Thumbnail (Curated Preset Pool)
         thumbnail_path = None

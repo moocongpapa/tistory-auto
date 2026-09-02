@@ -18,7 +18,8 @@ coupang:
 blogs:
 - enabled: true
   id: blog_1
-  name: Smart Work Lab (IT&테크/AI)
+  language: en
+  name: Smart Work Lab (AI & Tech Productivity)
   schedule_times:
   - 06:30
   - '10:00'
@@ -28,32 +29,29 @@ blogs:
   subdomain: smartwork-lab
   themes:
   - keywords:
-    - 직장인 ChatGPT 업무 보고서 자동화 프롬프트 모음 2026
-    - Gemini AI 무료 활용법 초보 직장인 가이드
-    - 노코드 업무 자동화 툴 Zapier Make 비교 추천
-    - 생성형 AI 이미지 생성 무료 사이트 비교 순위
-    - RPA 업무 자동화 도입 사례 중소기업 비용 절감
-    - AI 코딩 도구 Cursor Copilot 무료 플랜 비교
-    - ChatGPT 엑셀 함수 자동 생성 프롬프트 모음
-    - 회사 업무 자동화 노션 AI 템플릿 무료 다운로드
-    name: AI&업무 자동화
+    - Best Free AI Tools for Productivity and Remote Work 2026
+    - How to Automate Excel Reports Using ChatGPT Prompts
+    - Top No-Code Automation Tools: Zapier vs Make Comparison
+    - Best AI Coding Assistants: Cursor vs GitHub Copilot Guide
+    - Free AI Image Generators for Creators and Marketers
+    - Notion AI Workspace Setup for Workflow Optimization
+    name: AI & Automation
   - keywords:
-    - 2026 가성비 노트북 추천 직장인 대학생 용도별 비교
-    - 아이패드 프로 vs 갤럭시탭 S10 생산성 비교 후기
-    - 맥북 에어 M4 초기 세팅 필수 앱 10가지
-    - 직장인 생산성 앱 추천 무료 유료 비교 TOP 7
-    - 가성비 무선 이어폰 추천 통화품질 순위 비교 2026
-    - 스마트워치 추천 갤럭시워치7 vs 애플워치10 건강 기능 비교
-    name: IT 기기&앱 추천
+    - Best Budget Noise Cancelling Headphones for Focus & Commute
+    - M4 MacBook Air vs iPad Pro for Writers & Remote Workers
+    - Top Ergonomic Desk Accessories for Home Office Setup
+    - Smartwatch Comparison: Apple Watch vs Galaxy Watch for Health
+    - Best Portable Monitors for Remote Work & Digital Nomads
+    name: Tech Gear & Gadgets
   - keywords:
-    - 2026 하반기 빅테크 AI 신기술 동향 총정리
-    - 애플 비전프로 2세대 출시일 스펙 가격 전망
-    - 클라우드 SaaS 시장 트렌드 중소기업 도입 가이드
-    - 차세대 폴더블 스마트폰 갤럭시Z 플립7 유출 스펙 정리
-    - AI 에이전트 시대 일자리 변화 전망 및 대비 전략
-    name: 테크 트렌드
+    - Best Free Project Management Tools for Small Teams
+    - Time Blocking & Pomodoro Apps to Maximize Deep Work
+    - Cloud SaaS Trends and Top Business Software in 2026
+    - Browser Extensions for Extreme Productivity and Focus
+    name: Productivity & SaaS
 - enabled: true
   id: blog_2
+  language: ko
   name: Money Roadmap 24 (금융&재테크)
   schedule_times:
   - 06:45
@@ -87,6 +85,7 @@ blogs:
     name: 재테크 기본상식
 - enabled: true
   id: blog_3
+  language: ko
   name: 정책 알리미 365 (정부 지원금&생활정보)
   schedule_times:
   - 07:00
@@ -119,7 +118,8 @@ blogs:
     name: 복지 혜택
 - enabled: true
   id: blog_4
-  name: 웰니스 루틴 연구소 (건강&웰빙 라이프)
+  language: en
+  name: Wellness Routine Lab (Biohacking & Health)
   schedule_times:
   - 07:15
   - '10:45'
@@ -129,23 +129,27 @@ blogs:
   subdomain: wellness-routine
   themes:
   - keywords:
-    - 불면증 극복 478 호흡법 마그네슘 수면 루틴 완벽 가이드
-    - 만성 피로 회복을 위한 나이트 웰니스 루틴
-    - 명상 초보자 마인드풀니스 스트레스 해소법
-    name: 수면&스트레스케어
+    - Best Supplement Stack for Chronic Fatigue and Brain Fog
+    - Magnesium Glycinate vs Threonate: Science-Backed Sleep Benefits
+    - Vitamin D3 and K2 Synergy: Optimal Dosage and Health Guide
+    - Nootropics for Memory and Focus: Beginner's Guide 2026
+    - Omega-3 Fish Oil vs Krill Oil: Heart & Joint Health Comparison
+    name: Supplements & Energy
   - keywords:
-    - 직장인 만성 피로 영양제 추천 조합 비타민B 마그네슘 복용법
-    - 수면 개선 영양제 추천 멜라토닌 테아닌 마그네슘 비교 후기
-    - 간 건강 밀크씨슬 UDCA 효능 비교 음주 후 간 보호 영양제
-    - 눈 건강 루테인 아스타잔틴 오메가3 복합 영양제 추천 비교
-    name: 영양제&피로회복
+    - 4-7-8 Breathing Technique and Night Routine for Deep Sleep
+    - How to Lower Cortisol and Relieve Work Stress Naturally
+    - Circadian Rhythm Reset: Morning Sunlight and Sleep Hygiene
+    - Guided Mindfulness and Box Breathing for Anxiety Relief
+    name: Sleep & Stress Care
   - keywords:
-    - 직장인 퇴근 후 15분 홈트 루틴 전신 운동 유튜브 추천
-    - 거북목 라운드숄더 교정 스트레칭 사무실에서 5분 루틴
-    - 아침 10분 모닝 스트레칭 하루 컨디션 올리는 루틴
-    name: 홈트&웰빙루틴
+    - 5-Minute Desk Ergonomics: Fix Forward Head Posture & Neck Pain
+    - 15-Minute Home Dumbbell Workout for Busy Professionals
+    - Daily Morning Mobility Routine for Stiff Back and Hips
+    - Walking Pad vs Under Desk Elliptical for Daily Office Steps
+    name: Posture & Home Fitness
 - enabled: true
   id: blog_5
+  language: ko
   name: Grow Mindset (자기계발 & 커리어)
   schedule_times:
   - 07:30
