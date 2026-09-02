@@ -21,6 +21,8 @@ from config.prompts import (
 )
 
 logger = logging.getLogger(__name__)
+# Suppress Google GenAI internal AFC recommendation warnings
+logging.getLogger("google_genai.models").setLevel(logging.ERROR)
 
 # Fallback model list in order of priority (3-tier safe cascade: 3.5 -> 3.5-lite -> 2.5)
 FALLBACK_TEXT_MODELS = [
@@ -132,7 +134,8 @@ class GeminiClient:
                     contents=prompt,
                     config=types.GenerateContentConfig(
                         response_mime_type="application/json",
-                        temperature=temperature
+                        temperature=temperature,
+                        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
                     )
                 )
                 if response and response.text:
