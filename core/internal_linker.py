@@ -22,11 +22,15 @@ class InternalLinker:
             valid_posts = []
             for p in posts:
                 url = (p.get("post_url") or "").strip()
-                # Must not be a manage URL or general root domain
-                if not url or url == "#" or "/manage" in url or "/newpost" in url:
+                # Must not be a manage URL, admin page, or root domain
+                if not url or url == "#" or "/manage" in url or "/newpost" in url or "m.tistory" in url:
                     continue
-                # Must contain post number or entry slug
-                if re.search(r"tistory\.com/\d+", url) or "/entry/" in url:
+                # Strictly enforce exact public post URLs (e.g. https://domain.tistory.com/123 or https://domain.tistory.com/entry/slug)
+                if re.match(r"^https?://[a-zA-Z0-9-]+\.tistory\.com/(\d+|entry/[^/]+)/?$", url):
+                    # Exclude self if current_keyword is too similar to title
+                    title = p.get("title", "")
+                    if current_keyword and current_keyword.strip() in title:
+                        continue
                     valid_posts.append(p)
             
             if not valid_posts:
@@ -61,14 +65,13 @@ class InternalLinker:
         for post in related:
             title = post.get("title", "관련 추천 글")
             url = post.get("post_url", "").strip()
-            if not url or "/manage" in url:
+            if not url or "/manage" in url or not re.match(r"^https?://[a-zA-Z0-9-]+\.tistory\.com/(\d+|entry/[^/]+)/?$", url):
                 continue
-            theme = post.get("theme", "추천")
             links_html += f"""
-<li style="margin-bottom: 10px; padding: 10px 14px; background: #f8fafc; border-radius: 8px; border-left: 3px solid #3b82f6; list-style: none;">
-  <a href="{url}" style="color: #1e293b; text-decoration: none; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: space-between;" target="_blank">
-    <span>📌 {title}</span>
-    <span style="font-size: 11px; color: #3b82f6; font-weight: 700; margin-left: 8px; white-space: nowrap;">바로보기 &gt;</span>
+<li style="margin-bottom: 10px; padding: 12px 16px; background: #f8fafc; border-radius: 8px; border-left: 3px solid #3b82f6; list-style: none;">
+  <a href="{url}" style="color: #1e293b; text-decoration: none; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: space-between;" target="_blank" rel="noopener noreferrer">
+    <span style="display: flex; align-items: center; gap: 6px;">📌 {title}</span>
+    <span style="font-size: 12px; color: #2563eb; font-weight: 700; margin-left: 12px; white-space: nowrap;">바로보기 &gt;</span>
   </a>
 </li>
 """

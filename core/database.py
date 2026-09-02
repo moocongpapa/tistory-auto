@@ -58,7 +58,7 @@ class DatabaseManager:
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_keyword ON posts(keyword)")
             conn.commit()
 
-    def get_recent_topics(self, blog_id: str, limit: int = 15) -> List[str]:
+    def get_recent_topics(self, blog_id: str, limit: int = 30) -> List[str]:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(

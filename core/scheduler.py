@@ -87,12 +87,13 @@ class MultiBlogScheduler:
         # 2. Fetch live real-time trend keywords
         trend_keywords = self.trend_collector.get_trend_keywords_list(limit=8)
 
-        # 3. Get recent topics to prevent duplicates
-        previous_topics = self.db.get_recent_topics(blog_id=blog_id, limit=15)
+        # 3. Get recent topics to prevent duplicates (Strict 30-post history check)
+        previous_topics = self.db.get_recent_topics(blog_id=blog_id, limit=30)
+        logger.info(f"기존 작성된 최근 {len(previous_topics)}개 글 내역과 중복 배제 필터링 적용 중...")
 
         # 4. Discover fresh topic with Gemini (combining trends + static keywords)
         logger.info(f"Discovering fresh topic for theme: {theme_name}...")
-        model_name = self.config.get("ai", {}).get("text_model", "gemini-3.6-flash")
+        model_name = self.config.get("ai", {}).get("text_model", "gemini-3.5-flash")
         topic_info = self.gemini.discover_topic(
             blog_name=blog_name,
             theme_name=theme_name,
@@ -103,7 +104,7 @@ class MultiBlogScheduler:
         )
         selected_keyword = topic_info.get("keyword", "핵심 주제")
         selected_topic = topic_info.get("topic", f"{theme_name} 포스팅")
-        logger.info(f"Selected Keyword: {selected_keyword} | Topic: {selected_topic}")
+        logger.info(f"Selected Keyword (중복 배제 완료): {selected_keyword} | Topic: {selected_topic}")
 
         # 5. Generate SEO Article
         logger.info("Generating SEO-optimized HTML article with Gemini...")
