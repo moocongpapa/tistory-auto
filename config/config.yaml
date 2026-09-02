@@ -17,13 +17,17 @@ coupang:
   tracking_id: moocongpapa
 publishing:
   daily_post_count: 3
-  heading_count: 4_5
-  max_word_count: 3500
+  default_status: PUBLIC
+  generate_thumbnail: true
   min_word_count: 2500
+  max_word_count: 3500
+  heading_count: '4_5'
   tone_style: friendly_expert
   add_summary_card: true
   add_table: true
   add_faq: true
+  add_toc: true
+  headless: true
 blogs:
 - enabled: true
   id: blog_1
@@ -179,19 +183,6 @@ blogs:
     - 직장인 멘탈 관리법 명상 저널링 감사일기 효과 후기
     - 성공하는 사람들의 아침 습관 루틴 빌 게이츠 일론 머스크
     name: 성장 도서&마인드
-publishing:
-  daily_post_count: 5
-  add_faq: true
-  add_summary_card: true
-  add_table: true
-  add_toc: true
-  default_status: PUBLIC
-  generate_thumbnail: true
-  heading_count: '4_5'
-  headless: true
-  max_word_count: 3500
-  min_word_count: 2500
-  tone_style: professional
 seo:
   auto_meta_description: true
   category_mapping: true
