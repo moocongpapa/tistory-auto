@@ -126,6 +126,11 @@ class DatabaseManager:
                     url TEXT,
                     created_at TEXT
                 );
+                CREATE TABLE IF NOT EXISTS system_settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                );
                 """)
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_blog ON posts(blog_id);")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_keyword ON posts(keyword);")
@@ -165,6 +170,11 @@ class DatabaseManager:
                     message TEXT,
                     url TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE TABLE IF NOT EXISTS system_settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
                 CREATE INDEX IF NOT EXISTS idx_posts_blog ON posts(blog_id);
                 CREATE INDEX IF NOT EXISTS idx_posts_keyword ON posts(keyword);
@@ -430,6 +440,82 @@ class DatabaseManager:
         except Exception as e:
             logger.error(f"get_recent_activities error: {e}")
             return []
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+
+    def set_setting(self, key: str, value: str):
+        """Save or update a system setting persistently across restarts."""
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            if self.is_postgres:
+                cursor.execute("""
+                    INSERT INTO system_settings (key, value, updated_at)
+                    VALUES (%s, %s, NOW())
+                    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();
+                """, (key, value))
+            else:
+                cursor.execute("""
+                    INSERT OR REPLACE INTO system_settings (key, value, updated_at)
+                    VALUES (?, ?, ?)
+                """, (key, value, now_str))
+            conn.commit()
+            logger.info(f"💾 [영구저장] 시스템 세팅 저장 완료: {key}")
+        except Exception as e:
+            logger.error(f"set_setting error ({key}): {e}")
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+
+    def get_setting(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        """Retrieve a persistent setting by key."""
+        conn = None
+        ph = "%s" if self.is_postgres else "?"
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT value FROM system_settings WHERE key = {ph} LIMIT 1;", (key,))
+            row = cursor.fetchone()
+            if row:
+                if isinstance(row, dict):
+                    return row.get("value")
+                return row[0]
+            return default
+        except Exception as e:
+            logger.debug(f"get_setting error ({key}): {e}")
+            return default
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+
+    def clear_activity_logs(self) -> bool:
+        """Clear all records from activity_logs table upon user request."""
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            if self.is_postgres:
+                cursor.execute("TRUNCATE TABLE activity_logs;")
+            else:
+                cursor.execute("DELETE FROM activity_logs;")
+            conn.commit()
+            logger.info("🗑️ [데이터베이스] 활동 리포트 로그 전체 삭제 완료.")
+            return True
+        except Exception as e:
+            logger.error(f"clear_activity_logs error: {e}")
+            return False
         finally:
             if conn:
                 try:

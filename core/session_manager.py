@@ -146,6 +146,14 @@ class ActiveQRSession:
                     self.storage_state_json = json.dumps(data)
                     self.status = "COMPLETED"
 
+                    # Persist session to Database (Supabase) so it survives redeploys
+                    try:
+                        from core.database import DatabaseManager
+                        DatabaseManager().set_setting("session_storage_state", self.storage_state_json)
+                        logger.info("💾 [영구보존] 카카오 인증 세션이 클라우드 DB에 영구 저장되었습니다.")
+                    except Exception as db_e:
+                        logger.debug(f"DB 세션 저장 오류: {db_e}")
+
                     # Close browser
                     self.close()
 
@@ -185,7 +193,20 @@ class SessionManager:
         self._cleanup_lock = threading.Lock()
 
     def get_session_info(self) -> Dict[str, Any]:
-        """Check status of existing storage_state.json"""
+        """Check status of existing storage_state.json and auto-restore from DB if needed"""
+        if not os.path.exists(STORAGE_STATE_FILE):
+            # Check DB persistent storage
+            try:
+                from core.database import DatabaseManager
+                saved_json = DatabaseManager().get_setting("session_storage_state")
+                if saved_json and saved_json.strip():
+                    os.makedirs(SESSION_DIR, exist_ok=True)
+                    with open(STORAGE_STATE_FILE, "w", encoding="utf-8") as f:
+                        f.write(saved_json.strip())
+                    logger.info("영구 저장소(DB)로부터 카카오 인증 세션을 성공적으로 자동 복원했습니다.")
+            except Exception as e:
+                logger.debug(f"DB 세션 복원 시도 참고: {e}")
+
         if not os.path.exists(STORAGE_STATE_FILE):
             return {
                 "exists": False,
@@ -339,6 +360,15 @@ class SessionManager:
                 with open(STORAGE_STATE_FILE, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 session_str = json.dumps(data)
+
+                # Persist to DB
+                try:
+                    from core.database import DatabaseManager
+                    DatabaseManager().set_setting("session_storage_state", session_str)
+                    logger.info("💾 [영구보존] 계정 직접 로그인 세션이 클라우드 DB에 영구 저장되었습니다.")
+                except Exception as db_e:
+                    logger.debug(f"DB 세션 저장 오류: {db_e}")
+
                 context.close()
                 browser.close()
                 p.stop()
@@ -380,9 +410,18 @@ class SessionManager:
             if "cookies" not in data:
                 return {"success": False, "error": "유효한 Playwright storage_state 형식이 아닙니다 (cookies 필드 누락)."}
 
+            clean_json_str = json.dumps(data, ensure_ascii=False, indent=2)
             os.makedirs(SESSION_DIR, exist_ok=True)
             with open(STORAGE_STATE_FILE, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+                f.write(clean_json_str)
+
+            # Persist to DB
+            try:
+                from core.database import DatabaseManager
+                DatabaseManager().set_setting("session_storage_state", clean_json_str)
+                logger.info("💾 [영구보존] 가져온 세션 데이터가 클라우드 DB에 영구 저장되었습니다.")
+            except Exception as db_e:
+                logger.debug(f"DB 세션 저장 오류: {db_e}")
 
             return {
                 "success": True,

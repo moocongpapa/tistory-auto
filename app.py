@@ -56,7 +56,30 @@ trend_collector = TrendCollector()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("FastAPI 시작: 백그라운드 스케줄러를 가동합니다...")
+    logger.info("FastAPI 시작: 영구 설정 복원 및 백그라운드 스케줄러 가동...")
+    try:
+        # 1. Restore AI Model
+        saved_model = db.get_setting("ai_model")
+        if saved_model:
+            scheduler_runner.config.setdefault("ai", {})["text_model"] = saved_model
+            logger.info(f"💾 [영구복원] AI 모델 복원: {saved_model}")
+
+        # 2. Restore Quality Config
+        saved_qc = db.get_setting("quality_config")
+        if saved_qc:
+            qc_dict = json.loads(saved_qc)
+            scheduler_runner.config.setdefault("publishing", {}).update(qc_dict)
+            logger.info("💾 [영구복원] 글 품질 설정 복원 완료")
+
+        # 3. Restore Daily Schedule Count
+        saved_count = db.get_setting("daily_post_count")
+        if saved_count and saved_count.isdigit():
+            count = int(saved_count)
+            scheduler_runner.update_daily_post_count(count)
+            logger.info(f"💾 [영구복원] 일일 발행 스케줄 복원 ({count}회)")
+    except Exception as e:
+        logger.warning(f"영구 설정 복원 중 참고: {e}")
+
     scheduler_runner.start()
     yield
     logger.info("FastAPI 종료")
@@ -358,6 +381,12 @@ async def set_quality(req: UpdateQualityRequest):
         pub_cfg["add_faq"] = req.add_faq
         pub_cfg["add_summary_card"] = req.add_summary_card
         
+        # Persist to Database (Supabase) so settings survive redeploy/restart
+        try:
+            db.set_setting("quality_config", json.dumps(req.dict()))
+        except Exception as db_err:
+            logger.warning(f"DB 글 품질 설정 저장 실패: {db_err}")
+
         # Update config.yaml file
         if os.path.exists(CONFIG_PATH):
             with open(CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -385,6 +414,11 @@ class UpdateScheduleCountRequest(BaseModel):
 async def update_daily_schedule_count(req: UpdateScheduleCountRequest):
     try:
         res = scheduler_runner.update_daily_post_count(req.daily_post_count)
+        # Persist to Database (Supabase)
+        try:
+            db.set_setting("daily_post_count", str(req.daily_post_count))
+        except Exception as db_err:
+            logger.warning(f"DB 스케줄 설정 저장 실패: {db_err}")
         return res
     except Exception as e:
         logger.error(f"일일 발행 횟수 변경 오류: {e}")
@@ -398,6 +432,12 @@ async def set_model(req: UpdateModelRequest):
         
         # Update in-memory config
         scheduler_runner.config.setdefault("ai", {})["text_model"] = model
+
+        # Persist to Database (Supabase)
+        try:
+            db.set_setting("ai_model", model)
+        except Exception as db_err:
+            logger.warning(f"DB 모델 설정 저장 실패: {db_err}")
         
         # Update config.yaml file
         if os.path.exists(CONFIG_PATH):
@@ -410,6 +450,30 @@ async def set_model(req: UpdateModelRequest):
         return {"success": True, "model": model, "message": f"AI 모델이 '{model}'(으)로 변경되었습니다."}
     except Exception as e:
         logger.error(f"모델 변경 중 오류: {e}")
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+@app.post("/api/logs/clear")
+async def clear_all_logs_api():
+    """Clear both DB activity logs and raw terminal log file upon user request."""
+    try:
+        success_db = db.clear_activity_logs()
+        
+        # Truncate scheduler.log
+        success_file = False
+        log_file = os.path.join(BASE_DIR, "data", "scheduler.log")
+        try:
+            with open(log_file, "w", encoding="utf-8") as f:
+                f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] [INFO] 사용자에 의해 시스템 로그가 초기화되었습니다.\n")
+            success_file = True
+        except Exception as e:
+            logger.error(f"로그 파일 비우기 실패: {e}")
+
+        return {
+            "success": success_db or success_file,
+            "message": "누적된 활동 리포트 및 시스템 로그가 모두 정상적으로 초기화되었습니다."
+        }
+    except Exception as e:
+        logger.error(f"로그 초기화 실패: {e}")
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
 @app.api_route("/api/health", methods=["GET", "HEAD"])
