@@ -29,6 +29,16 @@ class TistoryBot:
         self.password = os.environ.get("KAKAO_PASSWORD")
         os.makedirs(self.session_dir, exist_ok=True)
 
+        # Auto-restore session from environment variable (for Cloud / Render deployment)
+        session_env = os.environ.get("SESSION_STORAGE_STATE", "").strip()
+        if session_env and not os.path.exists(self.storage_state_file):
+            try:
+                with open(self.storage_state_file, "w", encoding="utf-8") as f:
+                    f.write(session_env)
+                logger.info("환경 변수(SESSION_STORAGE_STATE)로부터 티스토리 인증 세션을 성공적으로 복원했습니다.")
+            except Exception as e:
+                logger.warning(f"SESSION_STORAGE_STATE 복원 실패: {e}")
+
     def _ensure_logged_in(self, page: Page, subdomain: str) -> bool:
         """Verify login status at /manage and perform Kakao login if needed."""
         manage_url = f"https://{subdomain}.tistory.com/manage"
