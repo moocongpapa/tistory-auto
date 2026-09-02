@@ -1,10 +1,11 @@
 """
 Dual Database Manager: Supports Supabase (PostgreSQL) and Local SQLite seamlessly.
-If DATABASE_URL or SUPABASE_DB_URL is provided in environment variables, connects to Supabase PostgreSQL.
-Otherwise, falls back to local SQLite (data/publisher.db).
+Provides Automatic Fault-Tolerance (Graceful Fallback to SQLite if PostgreSQL connection fails).
 """
 
 import os
+import re
+import urllib.parse
 import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional
@@ -18,54 +19,72 @@ DB_PATH = os.path.join(DB_DIR, "publisher.db")
 class DatabaseManager:
     def __init__(self, db_path: str = DB_PATH):
         self.db_path = db_path
-        self.database_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or ""
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         
-        # Handle Render / Supabase postgres:// -> postgresql:// URL schema
-        if self.database_url.startswith("postgres://"):
-            self.database_url = self.database_url.replace("postgres://", "postgresql://", 1)
-
+        raw_db_url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DB_URL") or ""
+        self.database_url = self._sanitize_db_url(raw_db_url)
         self.is_postgres = bool(self.database_url and ("postgresql" in self.database_url or "postgres" in self.database_url))
 
-        # Safely auto-encode special characters in password if raw unescaped @ or # are present
-        if self.is_postgres and "@" in self.database_url:
-            try:
-                import re
-                import urllib.parse
-                # Split at the last @ before the host to separate credentials from host
-                creds_part, host_part = self.database_url.rsplit("@", 1)
-                proto_and_user, raw_pw = creds_part.split(":", 2)[0] + ":" + creds_part.split(":", 2)[1], creds_part.split(":", 2)[2]
-                if "@" in raw_pw or "#" in raw_pw:
-                    encoded_pw = urllib.parse.quote(raw_pw)
-                    self.database_url = f"{proto_and_user}:{encoded_pw}@{host_part}"
-            except Exception:
-                pass
-
+        # Test PostgreSQL connection upon initialization; fallback to SQLite if it fails
         if self.is_postgres:
-            logger.info("🚀 [데이터베이스] Supabase 클라우드 PostgreSQL 연결 모드 가동!")
-        else:
-            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+            try:
+                import psycopg2
+                test_conn = psycopg2.connect(self.database_url, connect_timeout=5)
+                test_conn.close()
+                logger.info("🚀 [데이터베이스] Supabase 클라우드 PostgreSQL 연결 성공!")
+            except Exception as e:
+                logger.warning(f"⚠️ [데이터베이스] Supabase 연결 시도 실패 ({e}). 로컬 SQLite로 자동 안전 전환합니다.")
+                self.is_postgres = False
+
+        if not self.is_postgres:
             logger.info(f"💾 [데이터베이스] 로컬 SQLite 연결 모드 가동: {self.db_path}")
 
         self.init_db()
 
+    def _sanitize_db_url(self, url: str) -> str:
+        if not url:
+            return ""
+        url = url.strip()
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+
+        # Handle unencoded special characters in password (e.g., @ or #)
+        if "@" in url:
+            try:
+                creds_part, host_part = url.rsplit("@", 1)
+                parts = creds_part.split(":", 2)
+                if len(parts) >= 3:
+                    proto_user = parts[0] + ":" + parts[1]
+                    raw_pw = parts[2]
+                    # If password contains unescaped special chars, encode it
+                    encoded_pw = urllib.parse.quote(raw_pw)
+                    url = f"{proto_user}:{encoded_pw}@{host_part}"
+            except Exception:
+                pass
+        return url
+
     def get_connection(self):
         if self.is_postgres:
-            import psycopg2
-            from psycopg2.extras import RealDictCursor
-            conn = psycopg2.connect(self.database_url, cursor_factory=RealDictCursor)
-            return conn
-        else:
-            import sqlite3
-            conn = sqlite3.connect(self.db_path)
-            conn.row_factory = sqlite3.Row
-            return conn
+            try:
+                import psycopg2
+                from psycopg2.extras import RealDictCursor
+                conn = psycopg2.connect(self.database_url, connect_timeout=5, cursor_factory=RealDictCursor)
+                return conn
+            except Exception as e:
+                logger.error(f"PostgreSQL 연결 중 오류 발생: {e}. SQLite로 임시 대체합니다.")
+                # Dynamic fallback
+                self.is_postgres = False
+
+        import sqlite3
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        return conn
 
     def init_db(self):
         try:
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 if self.is_postgres:
-                    # PostgreSQL DDL
                     cursor.execute("""
                     CREATE TABLE IF NOT EXISTS posts (
                         id SERIAL PRIMARY KEY,
@@ -106,7 +125,6 @@ class DatabaseManager:
                     CREATE INDEX IF NOT EXISTS idx_posts_keyword ON posts(keyword);
                     """)
                 else:
-                    # SQLite DDL
                     cursor.execute("""
                     CREATE TABLE IF NOT EXISTS posts (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
