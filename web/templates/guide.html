@@ -205,10 +205,16 @@
                 <div class="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:border-blue-400 transition">
                     <div>
                         <div class="flex items-center justify-between mb-3">
-                            <span class="text-[11px] font-extrabold bg-indigo-50 border border-indigo-200 text-indigo-700 px-2.5 py-1 rounded-lg">
-                                {{ b.themes[0].name if b.themes else '전문 블로그' }}
+                            {% if b.language == 'en' %}
+                            <span class="text-[11px] font-extrabold bg-blue-100 border border-blue-200 text-blue-800 px-2.5 py-1 rounded-lg flex items-center space-x-1 shadow-2xs">
+                                <span>🇺🇸 글로벌 영문 (Global EN)</span>
                             </span>
-                            <span class="text-xs text-slate-400 font-mono">1일 3회 자동 발행</span>
+                            {% else %}
+                            <span class="text-[11px] font-extrabold bg-emerald-100 border border-emerald-200 text-emerald-800 px-2.5 py-1 rounded-lg flex items-center space-x-1 shadow-2xs">
+                                <span>🇰🇷 국내 국문 (Domestic KO)</span>
+                            </span>
+                            {% endif %}
+                            <span class="text-xs text-slate-400 font-mono">1일 5회 자동 발행</span>
                         </div>
                         <h3 class="text-base font-extrabold text-slate-900 mb-1">{{ b.name }}</h3>
                         <a href="https://{{ b.subdomain }}.tistory.com" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 font-mono inline-flex items-center space-x-1 mb-4 font-medium">
@@ -218,7 +224,7 @@
 
                         <div class="space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-3">
                             <div>
-                                <span class="font-bold text-slate-700">📌 운영 테마 목록:</span>
+                                <span class="font-bold text-slate-700">📌 운영 카테고리/테마:</span>
                                 <div class="flex flex-wrap gap-1 mt-1">
                                     {% for t in b.themes %}
                                     <span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-medium">{{ t.name }}</span>
@@ -234,7 +240,7 @@
                             <span>발행 시간:</span>
                         </span>
                         <span class="font-mono font-bold text-slate-700">
-                            {{ b.schedule_times | join(', ') if b.schedule_times else '07:00, 13:00, 19:00' }}
+                            {{ b.schedule_times | join(', ') if b.schedule_times else '06:30, 10:00, 13:30, 17:00, 21:00' }}
                         </span>
                     </div>
                 </div>

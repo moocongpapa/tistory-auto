@@ -143,6 +143,7 @@ async def dashboard_home(request: Request):
         b_info = blogs_map.get(p_dict.get("blog_id"), {})
         p_dict["blog_name"] = b_info.get("name", p_dict.get("blog_id"))
         p_dict["blog_subdomain"] = b_info.get("subdomain", "")
+        p_dict["blog_language"] = b_info.get("language", "ko")
         enriched_posts.append(p_dict)
 
     # Read last 20 log lines

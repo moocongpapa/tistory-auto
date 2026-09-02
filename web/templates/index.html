@@ -307,7 +307,7 @@
                             <label for="selectBlog" class="text-[11px] font-bold text-slate-700 block mb-1">대상 블로그 선택</label>
                             <select id="selectBlog" class="w-full bg-white border border-slate-300/90 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none shadow-xs">
                                 {% for b in blogs %}
-                                <option value="{{ b.id }}">[{{ b.name }}] {{ b.subdomain }}.tistory.com</option>
+                                <option value="{{ b.id }}">{% if b.language == 'en' %}🇺🇸 [EN]{% else %}🇰🇷 [KO]{% endif %} {{ b.name }} ({{ b.subdomain }})</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -362,7 +362,7 @@
                 <div class="flex items-center space-x-1 overflow-x-auto pb-1 md:pb-0 max-w-full">
                     <button onclick="filterPosts('all')" class="post-filter-btn active bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-xs transition whitespace-nowrap flex-shrink-0 focus-visible:ring-2 focus-visible:ring-blue-500 outline-none" data-filter="all">전체보기</button>
                     {% for b in blogs %}
-                    <button onclick="filterPosts('{{ b.id }}')" class="post-filter-btn bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold px-2.5 py-1.5 rounded-lg transition whitespace-nowrap flex-shrink-0 focus-visible:ring-2 focus-visible:ring-slate-400 outline-none" data-filter="{{ b.id }}">{{ b.name }}</button>
+                    <button onclick="filterPosts('{{ b.id }}')" class="post-filter-btn bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 text-xs font-bold px-2.5 py-1.5 rounded-lg transition whitespace-nowrap flex-shrink-0 focus-visible:ring-2 focus-visible:ring-slate-400 outline-none" data-filter="{{ b.id }}">{% if b.language == 'en' %}🇺🇸 {% else %}🇰🇷 {% endif %}{{ b.name }}</button>
                     {% endfor %}
                 </div>
             </div>
@@ -416,10 +416,17 @@
                                 {% endif %}
                             </td>
 
-                            <!-- Blog Name & Subdomain Link -->
+                            <!-- Blog Name & Subdomain Link with Language Indicator Badge -->
                             <td class="px-3.5 py-2.5">
-                                <div class="font-bold text-slate-900 text-xs truncate max-w-[200px]" title="{{ p.blog_name }}">
-                                    {{ p.blog_name }}
+                                <div class="flex items-center flex-wrap gap-1 mb-0.5">
+                                    {% if p.blog_language == 'en' %}
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-blue-100 text-blue-800 border border-blue-200 shadow-2xs">🇺🇸 EN</span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs">🇰🇷 KO</span>
+                                    {% endif %}
+                                    <span class="font-bold text-slate-900 text-xs truncate max-w-[160px]" title="{{ p.blog_name }}">
+                                        {{ p.blog_name }}
+                                    </span>
                                 </div>
                                 {% if p.blog_subdomain %}
                                 <a href="https://{{ p.blog_subdomain }}.tistory.com" target="_blank" class="text-[10px] text-blue-600 hover:text-blue-800 font-mono inline-flex items-center space-x-0.5 focus-visible:ring-1 focus-visible:ring-blue-500 rounded">
