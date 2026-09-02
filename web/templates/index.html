@@ -952,6 +952,21 @@
                             <input type="password" id="directKakaoPassword" placeholder="비밀번호 입력" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none">
                         </div>
                         <div id="directLoginAlert" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+
+                        <!-- Manual 2FA Approval Confirmation Button -->
+                        <div id="confirm2faContainer" class="hidden p-4 bg-emerald-50/90 border border-emerald-300/80 rounded-2xl space-y-2.5 text-xs text-emerald-950 animate-in fade-in">
+                            <div class="font-bold flex items-center space-x-1.5 text-emerald-900">
+                                <i class="fa-solid fa-mobile-screen-button text-sm"></i>
+                                <span>스마트폰 카카오톡에서 [확인]을 누르셨나요?</span>
+                            </div>
+                            <p class="text-[11px] text-slate-600 leading-normal">
+                                스마트폰 알림톡에서 로그인을 승인하셨다면 아래 초록색 버튼을 눌러주세요. 서버가 즉시 최종 인증을 마무리합니다!
+                            </p>
+                            <button type="button" id="btnConfirm2faManually" onclick="submitConfirm2faManually()" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-xs py-3 rounded-xl transition shadow-md shadow-emerald-600/20 flex items-center justify-center space-x-2 cursor-pointer">
+                                <i class="fa-solid fa-circle-check text-sm"></i>
+                                <span id="btnConfirm2faText">✅ 스마트폰에서 승인 완료했습니다 (인증 확인)</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="flex items-center justify-end space-x-2 pt-2">
@@ -1905,7 +1920,11 @@
             btn.disabled = true;
             btnText.innerText = "로그인 및 2단계 인증 대기 중…";
             alertBox.className = "p-3 rounded-xl text-xs font-medium bg-blue-50 text-blue-800 border border-blue-200 block";
-            alertBox.innerHTML = `⏳ <b>카카오 로그인 진행 중</b><br>스마트폰 카카오톡으로 <b>[2단계 인증 알림]</b>이 오면 <b>[확인]</b>을 눌러주세요! 서버가 최대 2분 동안 승인을 감지하여 자동으로 완료합니다.`;
+            alertBox.innerHTML = `⏳ <b>카카오 로그인 진행 중</b><br>스마트폰 카카오톡으로 <b>[2단계 인증 알림]</b>이 오면 <b>[확인]</b>을 눌러주세요!<br>승인 후 아래 <b>[✅ 스마트폰에서 승인 완료했습니다]</b> 버튼을 누르시면 즉시 완료됩니다.`;
+            
+            // Show the manual confirm button container
+            const c2fa = document.getElementById('confirm2faContainer');
+            if (c2fa) c2fa.classList.remove('hidden');
 
             try {
                 const res = await fetch('/api/session/login', {
@@ -1918,14 +1937,12 @@
                 if (data.success) {
                     alertBox.className = "p-3 rounded-xl text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 block";
                     alertBox.innerText = "🎉 " + (data.message || "카카오 계정 로그인이 성공적으로 완료되었습니다!");
+                    if (c2fa) c2fa.classList.add('hidden');
                     refreshSessionStatus();
                     setTimeout(() => closeKakaoSessionModal(), 1500);
                 } else {
                     alertBox.className = "p-3 rounded-xl text-xs font-medium bg-rose-50 text-rose-800 border border-rose-200 block";
                     alertBox.innerText = "❌ " + (data.error || "로그인에 실패했습니다.");
-                    if (data.requires_2fa) {
-                        alertBox.innerHTML = `⚠️ <b>2단계 보안 인증 발생</b>: 카카오 해외 IP 차단 정책으로 모바일 승인이 필요합니다. 상단의 <b>[📱 QR코드]</b> 탭을 클릭하여 스마트폰 카메라로 QR을 스캔해주세요!`;
-                    }
                 }
             } catch (err) {
                 alertBox.className = "p-3 rounded-xl text-xs font-medium bg-rose-50 text-rose-800 border border-rose-200 block";
@@ -1933,6 +1950,38 @@
             } finally {
                 btn.disabled = false;
                 btnText.innerText = "서버에서 로그인 실행";
+            }
+        }
+
+        async function submitConfirm2faManually() {
+            const btn = document.getElementById('btnConfirm2faManually');
+            const btnText = document.getElementById('btnConfirm2faText');
+            const alertBox = document.getElementById('directLoginAlert');
+            const c2fa = document.getElementById('confirm2faContainer');
+
+            if (btn) btn.disabled = true;
+            if (btnText) btnText.innerText = "승인 여부 확인 중…";
+
+            try {
+                const res = await fetch('/api/session/login/confirm-2fa', { method: 'POST' });
+                const data = await res.json();
+
+                if (data.success) {
+                    alertBox.className = "p-3 rounded-xl text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 block";
+                    alertBox.innerText = "🎉 " + (data.message || "카카오 인증이 정상 승인되었습니다!");
+                    if (c2fa) c2fa.classList.add('hidden');
+                    refreshSessionStatus();
+                    setTimeout(() => closeKakaoSessionModal(), 1500);
+                } else {
+                    alertBox.className = "p-3 rounded-xl text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200 block";
+                    alertBox.innerText = "⏳ " + (data.message || data.error || "아직 승인이 완료되지 않았습니다. 모바일 카카오톡에서 [확인]을 누르고 2~3초 뒤 다시 클릭해주세요.");
+                }
+            } catch (err) {
+                alertBox.className = "p-3 rounded-xl text-xs font-medium bg-rose-50 text-rose-800 border border-rose-200 block";
+                alertBox.innerText = "확인 요청 오류: " + err.message;
+            } finally {
+                if (btn) btn.disabled = false;
+                if (btnText) btnText.innerText = "✅ 스마트폰에서 승인 완료했습니다 (인증 확인)";
             }
         }
 

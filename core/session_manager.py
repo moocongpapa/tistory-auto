@@ -191,6 +191,11 @@ class SessionManager:
     def __init__(self):
         self.active_qr_sessions: Dict[str, ActiveQRSession] = {}
         self._cleanup_lock = threading.Lock()
+        self.active_login_p = None
+        self.active_login_browser = None
+        self.active_login_context = None
+        self.active_login_page = None
+        self.manual_confirm_event = threading.Event()
 
     def get_session_info(self) -> Dict[str, Any]:
         """Check status of existing storage_state.json and auto-restore from DB if needed"""
@@ -301,6 +306,13 @@ class SessionManager:
             )
             page = context.new_page()
 
+            # Register active session for manual confirmation from UI
+            self.active_login_p = p
+            self.active_login_browser = browser
+            self.active_login_context = context
+            self.active_login_page = page
+            self.manual_confirm_event.clear()
+
             page.goto("https://www.tistory.com/auth/login", wait_until="domcontentloaded", timeout=45000)
             time.sleep(2)
 
@@ -344,12 +356,27 @@ class SessionManager:
 
             # If not immediately on tistory.com, wait for user's mobile 2FA approval (up to 120 seconds)
             if ("tistory.com" not in curr_url) or ("accounts.kakao.com" in curr_url) or ("추가 사용자 확인" in curr_title) or ("penalty_verification" in curr_url):
-                logger.info("🔔 [카카오 2단계 인증 대기] 스마트폰으로 카카오톡 인증 알림이 발송되었습니다. 폰에서 [확인]을 눌러주세요! (최대 120초 대기 중...)")
+                logger.info("🔔 [카카오 2단계 인증 대기] 스마트폰으로 카카오톡 인증 알림이 발송되었습니다. 폰에서 [확인]을 누르고, 웹 화면의 [승인 완료] 버튼을 누르셔도 됩니다! (최대 120초 대기 중...)")
                 
                 start_wait = time.time()
                 wait_timeout = 120
                 while time.time() - start_wait < wait_timeout:
-                    time.sleep(2.5)
+                    # Automatically attempt to click Kakao's '인증 완료' / '확인' button on webpage
+                    try:
+                        page.evaluate("""() => {
+                            const allEls = Array.from(document.querySelectorAll('button, a, input[type="submit"]'));
+                            for (const el of allEls) {
+                                const txt = (el.innerText || el.value || el.textContent || '').trim();
+                                if (txt.includes('인증 완료') || txt.includes('인증완료') || txt === '확인' || txt === '다음') {
+                                    el.click();
+                                    break;
+                                }
+                            }
+                        }""")
+                    except Exception:
+                        pass
+
+                    time.sleep(2.0)
                     curr_url = page.url
                     if ("tistory.com" in curr_url) and ("/auth/login" not in curr_url) and ("accounts.kakao.com" not in curr_url) and ("kauth.kakao.com" not in curr_url):
                         logger.info("🎉 [카카오 2단계 인증 성공] 사용자가 모바일에서 인증을 승인했습니다!")
@@ -402,6 +429,59 @@ class SessionManager:
             except Exception:
                 pass
             return {"success": False, "error": str(e)}
+        finally:
+            self.active_login_page = None
+            self.active_login_context = None
+            self.active_login_browser = None
+            self.active_login_p = None
+
+    def confirm_2fa_manually(self) -> Dict[str, Any]:
+        """Triggered when user clicks '스마트폰에서 승인 완료했습니다' button in the UI."""
+        return run_in_isolated_thread(self._confirm_2fa_manually_impl)
+
+    def _confirm_2fa_manually_impl(self) -> Dict[str, Any]:
+        page = self.active_login_page
+        if not page:
+            info = self.get_session_info()
+            if info.get("is_valid"):
+                return {"success": True, "message": "카카오 인증이 이미 정상적으로 완료되었습니다!"}
+            return {"success": False, "error": "현재 대기 중인 2단계 인증 세션이 없습니다. [서버에서 로그인 실행]을 먼저 눌러주세요."}
+
+        logger.info("👆 [화면 승인 버튼 클릭 감지] 사용자가 [스마트폰에서 승인 완료했습니다] 버튼을 클릭했습니다. 브라우저 '인증 완료' 즉시 클릭...")
+        self.manual_confirm_event.set()
+
+        try:
+            # Force click any confirm buttons on page
+            page.evaluate("""() => {
+                const allEls = Array.from(document.querySelectorAll('button, a, input[type="submit"]'));
+                for (const el of allEls) {
+                    const txt = (el.innerText || el.value || el.textContent || '').trim();
+                    if (txt.includes('인증 완료') || txt.includes('인증완료') || txt.includes('확인') || txt === '다음') {
+                        el.click();
+                        break;
+                    }
+                }
+            }""")
+            time.sleep(3)
+            curr_url = page.url
+            if ("tistory.com" in curr_url) and ("/auth/login" not in curr_url) and ("accounts.kakao.com" not in curr_url):
+                os.makedirs(SESSION_DIR, exist_ok=True)
+                if self.active_login_context:
+                    self.active_login_context.storage_state(path=STORAGE_STATE_FILE)
+                    with open(STORAGE_STATE_FILE, "r", encoding="utf-8") as sf:
+                        session_str = sf.read()
+                    from core.database import DatabaseManager
+                    DatabaseManager().set_setting("session_storage_state", session_str)
+                logger.info("🎉 [수동 승인 성공] 카카오 2단계 인증 승인이 확인되어 세션이 영구 저장되었습니다!")
+                return {"success": True, "message": "🎉 스마트폰 승인이 확인되어 카카오 로그인이 성공적으로 완료되었습니다!"}
+            else:
+                return {
+                    "success": False,
+                    "pending": True,
+                    "message": "스마트폰 카카오톡 알림에서 [확인]을 누르셨는지 확인 후 2~3초 뒤 이 버튼을 다시 한번 눌러주세요."
+                }
+        except Exception as e:
+            return {"success": False, "error": f"승인 처리 중 오류: {e}"}
 
     def import_session_json(self, session_json_str: str) -> Dict[str, Any]:
         """Validate and write raw JSON to storage_state.json"""

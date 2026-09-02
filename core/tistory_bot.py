@@ -140,7 +140,22 @@ class TistoryBot:
             start_wait = time.time()
             wait_timeout = 120
             while time.time() - start_wait < wait_timeout:
-                time.sleep(2.5)
+                # Automatically attempt to click Kakao's '인증 완료' / '확인' button on webpage
+                try:
+                    page.evaluate("""() => {
+                        const allEls = Array.from(document.querySelectorAll('button, a, input[type="submit"]'));
+                        for (const el of allEls) {
+                            const txt = (el.innerText || el.value || el.textContent || '').trim();
+                            if (txt.includes('인증 완료') || txt.includes('인증완료') || txt === '확인' || txt === '다음') {
+                                el.click();
+                                break;
+                            }
+                        }
+                    }""")
+                except Exception:
+                    pass
+
+                time.sleep(2.0)
                 c_url = page.url
                 if ("tistory.com" in c_url) and ("/auth/login" not in c_url) and ("accounts.kakao.com" not in c_url) and ("kauth.kakao.com" not in c_url):
                     logger.info("🎉 [카카오 2단계 인증 성공] 사용자가 모바일에서 인증을 승인했습니다!")

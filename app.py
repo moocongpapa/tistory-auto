@@ -318,6 +318,10 @@ async def check_qr_session(session_id: str):
 async def direct_login_api(req: DirectLoginRequest):
     return await asyncio.to_thread(session_manager.direct_login, req.email, req.password)
 
+@app.post("/api/session/login/confirm-2fa")
+async def confirm_2fa_api():
+    return await asyncio.to_thread(session_manager.confirm_2fa_manually)
+
 @app.post("/api/session/import")
 async def import_session_api(req: ImportSessionRequest):
     return session_manager.import_session_json(req.session_json)
