@@ -115,7 +115,7 @@ os.makedirs(THUMBNAILS_DIR, exist_ok=True)
 os.makedirs(ASSETS_DIR, exist_ok=True)
 
 app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
-app.mount("/static/thumbnails", StaticFiles(directory=THUMBNAILS_DIR), name="thumbnails")
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "web", "templates"))
 
@@ -127,6 +127,11 @@ async def get_manifest():
 @app.get("/sw.js")
 async def get_service_worker():
     return FileResponse(os.path.join(BASE_DIR, "static", "sw.js"), media_type="application/javascript")
+
+@app.get("/apple-touch-icon.png")
+@app.get("/apple-touch-icon-precomposed.png")
+async def get_apple_touch_icon():
+    return FileResponse(os.path.join(BASE_DIR, "static", "apple-touch-icon.png"), media_type="image/png")
 
 @app.get("/api/latest-post-event")
 async def get_latest_post_event(last_id: int = 0):
