@@ -7,6 +7,14 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- PWA & Mobile Web App Meta Tags -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="티스토리 AI">
+    <link rel="apple-touch-icon" href="/assets/smartwork/smartwork_icon.png">
+    <link rel="icon" type="image/png" href="/assets/smartwork/smartwork_icon.png">
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap');
         body {
@@ -68,8 +76,15 @@
                 </div>
             </div>
 
-            <!-- Right Controls: Model Selector & Live Status -->
+            <!-- Right Controls: Model Selector, Live Push Notif & Live Status -->
             <div class="flex items-center flex-wrap gap-2.5">
+                
+                <!-- Web Push Notification Toggle Button -->
+                <button id="pushNotifBtn" onclick="toggleWebPushNotification()" aria-label="실시간 푸시 알림 설정" class="flex items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/90 text-indigo-700 px-2.5 py-1.5 rounded-xl text-xs font-bold transition shadow-xs focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none cursor-pointer">
+                    <i id="pushNotifIcon" class="fa-regular fa-bell text-indigo-600"></i>
+                    <span id="pushNotifText">실시간 알림 받기</span>
+                </button>
+
                 <!-- AI Model Dropdown -->
                 <div class="flex items-center space-x-2 bg-slate-100/80 border border-slate-200 rounded-xl px-2.5 py-1.5">
                     <i class="fa-solid fa-brain text-indigo-600 text-xs" aria-hidden="true"></i>
@@ -971,10 +986,134 @@
             }
         }
 
+        // PWA Service Worker & Realtime Notification Engine
+        let maxKnownPostId = 0;
+        let notifInterval = null;
+
+        async function initNotificationEngine() {
+            // Find current max post ID on screen
+            const rows = document.querySelectorAll('.post-row');
+            rows.forEach(r => {
+                const pid = parseInt(r.getAttribute('data-post-id') || '0', 10);
+                if (pid > maxKnownPostId) maxKnownPostId = pid;
+            });
+
+            // Register Service Worker
+            if ('serviceWorker' in navigator) {
+                try {
+                    const reg = await navigator.serviceWorker.register('/sw.js');
+                    console.log('PWA Service Worker registered:', reg.scope);
+                } catch (e) {
+                    console.warn('Service Worker registration note:', e);
+                }
+            }
+
+            updateNotifButtonUI();
+
+            // Start background poller if permission granted
+            if ('Notification' in window && Notification.permission === 'granted') {
+                startNotifPoller();
+            }
+        }
+
+        function updateNotifButtonUI() {
+            const btn = document.getElementById('pushNotifBtn');
+            const icon = document.getElementById('pushNotifIcon');
+            const text = document.getElementById('pushNotifText');
+            if (!btn || !('Notification' in window)) return;
+
+            if (Notification.permission === 'granted') {
+                btn.className = "flex items-center space-x-1.5 bg-blue-50 border border-blue-200 text-blue-700 px-2.5 py-1.5 rounded-xl text-xs font-bold shadow-xs cursor-pointer";
+                icon.className = "fa-solid fa-bell text-blue-600";
+                text.innerText = "알림 켜짐";
+            } else if (Notification.permission === 'denied') {
+                btn.className = "flex items-center space-x-1.5 bg-slate-100 text-slate-400 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-bold cursor-not-allowed";
+                icon.className = "fa-solid fa-bell-slash text-slate-400";
+                text.innerText = "알림 차단됨";
+            } else {
+                btn.className = "flex items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 px-2.5 py-1.5 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer";
+                icon.className = "fa-regular fa-bell text-indigo-600";
+                text.innerText = "실시간 알림 받기";
+            }
+        }
+
+        async function toggleWebPushNotification() {
+            if (!('Notification' in window)) {
+                alert('현재 브라우저에서는 웹 알림을 지원하지 않습니다. (아이폰에서는 사파리 [공유] ➔ [홈 화면에 추가] 후 실행해주세요!)');
+                return;
+            }
+
+            if (Notification.permission === 'granted') {
+                showNativeNotification('🔔 알림 활성화 상태', '글이 자동 발행될 때마다 실시간으로 알림을 보내드립니다.');
+                return;
+            }
+
+            try {
+                const permission = await Notification.requestPermission();
+                updateNotifButtonUI();
+                if (permission === 'granted') {
+                    showNativeNotification('🎉 알림 설정 완료!', '티스토리 자동 발행 알림이 성공적으로 활성화되었습니다.');
+                    startNotifPoller();
+                } else {
+                    alert('알림 권한이 허용되지 않았습니다. 브라우저/기기 설정에서 알림을 허용해주세요.');
+                }
+            } catch (err) {
+                console.error('Notification permission error:', err);
+            }
+        }
+
+        function showNativeNotification(title, body, url = '/') {
+            const options = {
+                body: body,
+                icon: '/assets/smartwork/smartwork_icon.png',
+                badge: '/assets/smartwork/smartwork_icon.png',
+                data: { url: url },
+                vibrate: [200, 100, 200],
+                tag: 'tistory-post-' + Date.now(),
+                renotify: true
+            };
+
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification(title, options);
+                }).catch(() => {
+                    const n = new Notification(title, options);
+                    n.onclick = () => { window.focus(); if (url && url !== '/') window.open(url, '_blank'); };
+                });
+            } else if ('Notification' in window && Notification.permission === 'granted') {
+                const n = new Notification(title, options);
+                n.onclick = () => { window.focus(); if (url && url !== '/') window.open(url, '_blank'); };
+            }
+        }
+
+        function startNotifPoller() {
+            if (notifInterval) clearInterval(notifInterval);
+            notifInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/latest-post-event?last_id=${maxKnownPostId}`);
+                    const data = await res.json();
+                    if (data.has_new && data.post) {
+                        maxKnownPostId = data.post.id;
+                        const p = data.post;
+                        showNativeNotification(
+                            `🎉 [${p.blog_name}] 새 글 발행!`,
+                            `${p.title}\n카테고리: ${p.theme}`,
+                            p.url
+                        );
+                        // Reload table gently after notification
+                        setTimeout(() => location.reload(), 4000);
+                    }
+                } catch (e) {
+                    console.debug('Notif poller ping:', e);
+                }
+            }, 10000); // 10s polling interval
+        }
+
         // Initialize on Page Load
         document.addEventListener('DOMContentLoaded', () => {
             updateTableDisplay();
             fetchLatestLogs();
+            initNotificationEngine();
         });
     </script>
 </body>

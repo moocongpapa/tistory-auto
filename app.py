@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -118,6 +118,43 @@ app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
 app.mount("/static/thumbnails", StaticFiles(directory=THUMBNAILS_DIR), name="thumbnails")
 
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "web", "templates"))
+
+# PWA Static Routes
+@app.get("/manifest.json")
+async def get_manifest():
+    return FileResponse(os.path.join(BASE_DIR, "static", "manifest.json"), media_type="application/manifest+json")
+
+@app.get("/sw.js")
+async def get_service_worker():
+    return FileResponse(os.path.join(BASE_DIR, "static", "sw.js"), media_type="application/javascript")
+
+@app.get("/api/latest-post-event")
+async def get_latest_post_event(last_id: int = 0):
+    """Returns the newest published post if newer than last_id for PWA real-time push notification."""
+    latest_posts = db.get_all_posts(limit=1)
+    if not latest_posts:
+        return {"has_new": False}
+    
+    newest = dict(latest_posts[0])
+    curr_id = newest.get("id", 0)
+    if curr_id > last_id:
+        blogs = scheduler_runner.config.get("blogs", [])
+        blogs_map = {b["id"]: b for b in blogs}
+        b_info = blogs_map.get(newest.get("blog_id"), {})
+        
+        return {
+            "has_new": True,
+            "post": {
+                "id": curr_id,
+                "title": newest.get("title", ""),
+                "blog_name": b_info.get("name", newest.get("blog_id")),
+                "theme": newest.get("theme", ""),
+                "url": newest.get("post_url") or f"https://{b_info.get('subdomain', '')}.tistory.com",
+                "thumbnail_path": newest.get("thumbnail_path", ""),
+                "published_at": newest.get("created_at", "")
+            }
+        }
+    return {"has_new": False}
 
 class TriggerPostRequest(BaseModel):
     blog_id: str = "blog_1"
