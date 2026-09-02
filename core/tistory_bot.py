@@ -9,6 +9,8 @@ Integrated with reference repository (kgbae99/tistory-blog-auto) publishing stan
 import os
 import re
 import time
+import asyncio
+import threading
 import logging
 from typing import List, Optional, Dict, Any
 from dotenv import load_dotenv
@@ -167,12 +169,63 @@ class TistoryBot:
         is_draft: bool = False
     ) -> Dict[str, Any]:
         """
-        Full automated post workflow:
-        1. Login verification at /manage
-        2. Enter /manage/newpost with anti-draft restore script
-        3. Set Title, HTML Body, Category, Tags, Thumbnail
-        4. Complete Public Publication and verify live URL
+        Full automated post workflow.
+        Automatically isolates execution into a clean OS thread if called within an active asyncio loop,
+        permanently preventing 'It looks like you are using Playwright Sync API inside the asyncio loop'.
         """
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            logger.info("⚡ [Playwright] 활성 asyncio 이벤트 루프 감지됨: 격리된 독립 OS 스레드에서 안전하게 실행합니다.")
+            result = [None]
+            err = [None]
+
+            def _clean_worker():
+                try:
+                    asyncio.set_event_loop(None)
+                    result[0] = self._post_article_impl(
+                        subdomain=subdomain,
+                        title=title,
+                        content_html=content_html,
+                        tags=tags,
+                        thumbnail_path=thumbnail_path,
+                        category_name=category_name,
+                        is_draft=is_draft
+                    )
+                except Exception as ex:
+                    err[0] = ex
+
+            t = threading.Thread(target=_clean_worker, daemon=True)
+            t.start()
+            t.join()
+
+            if err[0]:
+                raise err[0]
+            return result[0]
+        else:
+            return self._post_article_impl(
+                subdomain=subdomain,
+                title=title,
+                content_html=content_html,
+                tags=tags,
+                thumbnail_path=thumbnail_path,
+                category_name=category_name,
+                is_draft=is_draft
+            )
+
+    def _post_article_impl(
+        self,
+        subdomain: str,
+        title: str,
+        content_html: str,
+        tags: List[str],
+        thumbnail_path: Optional[str] = None,
+        category_name: Optional[str] = None,
+        is_draft: bool = False
+    ) -> Dict[str, Any]:
         with sync_playwright() as p:
             browser = p.chromium.launch(
                 headless=self.headless,

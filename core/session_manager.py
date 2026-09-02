@@ -11,6 +11,7 @@ import os
 import time
 import json
 import uuid
+import asyncio
 import logging
 import threading
 from typing import Dict, Any, Optional
@@ -22,6 +23,31 @@ logger = logging.getLogger(__name__)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SESSION_DIR = os.path.join(BASE_DIR, "session_data")
 STORAGE_STATE_FILE = os.path.join(SESSION_DIR, "storage_state.json")
+
+def run_in_isolated_thread(func, *args, **kwargs):
+    """Executes a blocking/sync Playwright function in an isolated clean OS thread without asyncio loop."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        res = [None]
+        err = [None]
+        def _worker():
+            try:
+                asyncio.set_event_loop(None)
+                res[0] = func(*args, **kwargs)
+            except Exception as e:
+                err[0] = e
+        t = threading.Thread(target=_worker, daemon=True)
+        t.start()
+        t.join()
+        if err[0]:
+            raise err[0]
+        return res[0]
+    else:
+        return func(*args, **kwargs)
 
 class ActiveQRSession:
     def __init__(self, session_id: str):
@@ -40,6 +66,9 @@ class ActiveQRSession:
         self._lock = threading.Lock()
 
     def start(self):
+        return run_in_isolated_thread(self._start_impl)
+
+    def _start_impl(self):
         try:
             self.p = sync_playwright().start()
             self.browser = self.p.chromium.launch(
@@ -231,6 +260,9 @@ class SessionManager:
 
     def direct_login(self, email: str, password: str) -> Dict[str, Any]:
         """Attempt direct automated login with Kakao email & password"""
+        return run_in_isolated_thread(self._direct_login_impl, email, password)
+
+    def _direct_login_impl(self, email: str, password: str) -> Dict[str, Any]:
         if not email or not password:
             return {"success": False, "error": "아이디와 비밀번호를 모두 입력해주세요."}
 
