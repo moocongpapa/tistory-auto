@@ -80,7 +80,9 @@ class MultiBlogScheduler:
         else:
             theme = random.choice(themes)
 
-        language = blog_config.get("language", "ko")
+        theme_name = theme.get("name")
+        keywords = theme.get("keywords", [])
+        language = blog_cfg.get("language", "ko")
         logger.info(f"블로그 언어 설정: [{language.upper()}] | 선택된 테마: [{theme_name}]")
 
         # 2. Fetch live real-time trend keywords
