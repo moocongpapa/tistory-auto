@@ -29,15 +29,15 @@ class TistoryBot:
         self.password = os.environ.get("KAKAO_PASSWORD")
         os.makedirs(self.session_dir, exist_ok=True)
 
-        # Auto-restore session from environment variable (for Cloud / Render deployment)
+        # Auto-restore/sync session from environment variable (for Cloud / Render deployment)
         session_env = os.environ.get("SESSION_STORAGE_STATE", "").strip()
-        if session_env and not os.path.exists(self.storage_state_file):
+        if session_env:
             try:
                 with open(self.storage_state_file, "w", encoding="utf-8") as f:
                     f.write(session_env)
-                logger.info("환경 변수(SESSION_STORAGE_STATE)로부터 티스토리 인증 세션을 성공적으로 복원했습니다.")
+                logger.info("환경 변수(SESSION_STORAGE_STATE)로부터 티스토리 인증 세션을 성공적으로 동기화했습니다.")
             except Exception as e:
-                logger.warning(f"SESSION_STORAGE_STATE 복원 실패: {e}")
+                logger.warning(f"SESSION_STORAGE_STATE 동기화 실패: {e}")
 
     def _ensure_logged_in(self, page: Page, subdomain: str) -> bool:
         """Verify login status at /manage and perform Kakao login if needed."""
@@ -114,11 +114,18 @@ class TistoryBot:
                     logger.error(f"카카오 로그인 입력 에러: {e}")
 
         # 3. Wait until redirected back to Tistory
+        if "penalty_verification" in page.url:
+            logger.error("🚨 카카오 해외 IP 본인확인/페널티 보안 인증(penalty_verification)이 감지되었습니다. 로컬에서 인증된 세션(SESSION_STORAGE_STATE)을 Render 환경변수에 등록하여 사용해주세요.")
+            return False
+
         try:
             page.wait_for_url("**/tistory.com/**", timeout=20000)
             logger.info("카카오 로그인 및 티스토리 복귀 완료!")
             return True
         except Exception:
+            if "penalty_verification" in page.url:
+                logger.error("🚨 카카오 해외 IP 본인확인/페널티 보안 인증이 발생하여 자동 로그인이 차단되었습니다.")
+                return False
             logger.warning(f"로그인 후 티스토리 복귀 대기 타임아웃. 현재 URL: {page.url}")
             return "tistory.com" in page.url
 
