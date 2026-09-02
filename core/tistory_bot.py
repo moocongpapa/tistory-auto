@@ -173,8 +173,23 @@ class TistoryBot:
                 };
             """)
 
-            # Dialog listener fallback
-            page.on("dialog", lambda dialog: dialog.dismiss())
+            # Dialog listener with Daily 15-Post Limit Detection
+            daily_limit_detected = [False]
+            def handle_dialog(dialog):
+                msg = dialog.message or ""
+                logger.info(f"브라우저 다이얼로그 감지: '{msg}'")
+                if "15개" in msg or "최대" in msg or "발행할 수 있는 글" in msg:
+                    daily_limit_detected[0] = True
+                    logger.warning("🚨 [티스토리 정책 제한] 하루 최대 공개 발행 수량(15개)에 도달하였습니다. 글은 안전하게 임시저장되었습니다.")
+                try:
+                    dialog.accept()
+                except Exception:
+                    try:
+                        dialog.dismiss()
+                    except Exception:
+                        pass
+
+            page.on("dialog", handle_dialog)
 
             # 1. Step 1: Ensure Logged In
             if not self._ensure_logged_in(page, subdomain):
@@ -608,10 +623,12 @@ class TistoryBot:
                 pass
 
             context.close()
-            browser.close()
-
-            post_status = "DRAFT_SAVED" if is_draft else "PUBLISHED"
-            logger.info(f"🎉 티스토리 블로그 {mode_text} 100% 성공! 최종 URL: {final_url}")
+            if daily_limit_detected[0]:
+                post_status = "DAILY_LIMIT_DRAFT"
+                logger.warning(f"⚠️ [일일 15개 한도 도달] 티스토리 하루 최대 발행 쿼터(15개)에 도달하여 임시저장되었습니다. 자정(00:00)에 리셋됩니다.")
+            else:
+                post_status = "DRAFT_SAVED" if is_draft else "PUBLISHED"
+                logger.info(f"🎉 티스토리 블로그 {mode_text} 100% 성공! 최종 URL: {final_url}")
             return {
                 "status": post_status,
                 "url": final_url
