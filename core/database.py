@@ -24,7 +24,21 @@ class DatabaseManager:
         if self.database_url.startswith("postgres://"):
             self.database_url = self.database_url.replace("postgres://", "postgresql://", 1)
 
-        self.is_postgres = bool(self.database_url and "postgresql" in self.database_url)
+        self.is_postgres = bool(self.database_url and ("postgresql" in self.database_url or "postgres" in self.database_url))
+
+        # Safely auto-encode special characters in password if raw unescaped @ or # are present
+        if self.is_postgres and "@" in self.database_url:
+            try:
+                import re
+                import urllib.parse
+                # Split at the last @ before the host to separate credentials from host
+                creds_part, host_part = self.database_url.rsplit("@", 1)
+                proto_and_user, raw_pw = creds_part.split(":", 2)[0] + ":" + creds_part.split(":", 2)[1], creds_part.split(":", 2)[2]
+                if "@" in raw_pw or "#" in raw_pw:
+                    encoded_pw = urllib.parse.quote(raw_pw)
+                    self.database_url = f"{proto_and_user}:{encoded_pw}@{host_part}"
+            except Exception:
+                pass
 
         if self.is_postgres:
             logger.info("🚀 [데이터베이스] Supabase 클라우드 PostgreSQL 연결 모드 가동!")
