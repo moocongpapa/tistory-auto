@@ -130,6 +130,7 @@ async def get_service_worker():
 
 @app.get("/apple-touch-icon.png")
 @app.get("/apple-touch-icon-precomposed.png")
+@app.get("/favicon.ico")
 async def get_apple_touch_icon():
     return FileResponse(os.path.join(BASE_DIR, "static", "apple-touch-icon.png"), media_type="image/png")
 
