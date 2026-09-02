@@ -62,47 +62,52 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Tistory Multi-Blog Publisher Dashboard", lifespan=lifespan)
 
-# Security: HTTP Basic Auth Middleware to protect dashboard from unauthorized public access
+import hashlib
+
+# Security: Hybrid Cookie + Basic Auth Middleware for seamless Mobile PWA and Browser access
 class DashboardAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         username = os.environ.get("DASHBOARD_USERNAME", "admin")
         password = os.environ.get("DASHBOARD_PASSWORD", "").strip()
 
-        # Whitelist public routes (Render keep-alive ping, PWA icons & manifest, and static assets)
+        # Whitelist public routes (Render keep-alive ping, PWA icons & manifest, login page, and static assets)
         path = request.url.path
-        if path in ["/api/health", "/ping", "/favicon.ico", "/manifest.json", "/sw.js", "/apple-touch-icon.png", "/apple-touch-icon-precomposed.png"] or path.startswith("/static") or path.startswith("/assets"):
+        if path in [
+            "/api/health", "/ping", "/favicon.ico", "/manifest.json", "/sw.js", 
+            "/apple-touch-icon.png", "/apple-touch-icon-precomposed.png", "/login", "/logout"
+        ] or path.startswith("/static") or path.startswith("/assets"):
             return await call_next(request)
 
         # If DASHBOARD_PASSWORD is configured, require authentication
         if password:
+            expected_token = hashlib.sha256(f"{username}:{password}".encode("utf-8")).hexdigest()
+            cookie_token = request.cookies.get("session_auth", "")
+
+            # 1. Check Cookie Session (Mobile PWA & Browser)
+            if cookie_token and secrets.compare_digest(cookie_token, expected_token):
+                return await call_next(request)
+
+            # 2. Check HTTP Basic Auth Header (API calls / curl)
             auth_header = request.headers.get("Authorization")
-            if not auth_header or not auth_header.startswith("Basic "):
+            if auth_header and auth_header.startswith("Basic "):
+                try:
+                    encoded_creds = auth_header.split(" ", 1)[1]
+                    decoded = base64.b64decode(encoded_creds).decode("utf-8")
+                    req_user, req_pass = decoded.split(":", 1)
+                    if secrets.compare_digest(req_user, username) and secrets.compare_digest(req_pass, password):
+                        return await call_next(request)
+                except Exception:
+                    pass
+
+            # 3. Not authenticated -> Redirect to /login for web/PWA or 401 for API
+            if path.startswith("/api/"):
                 return Response(
                     content="Unauthorized: Access to Tistory AI Publisher is protected.",
                     status_code=401,
                     headers={"WWW-Authenticate": 'Basic realm="Tistory Publisher Dashboard"'}
                 )
-
-            try:
-                encoded_creds = auth_header.split(" ", 1)[1]
-                decoded = base64.b64decode(encoded_creds).decode("utf-8")
-                req_user, req_pass = decoded.split(":", 1)
-
-                is_user_valid = secrets.compare_digest(req_user, username)
-                is_pass_valid = secrets.compare_digest(req_pass, password)
-
-                if not (is_user_valid and is_pass_valid):
-                    return Response(
-                        content="Unauthorized: Invalid username or password.",
-                        status_code=401,
-                        headers={"WWW-Authenticate": 'Basic realm="Tistory Publisher Dashboard"'}
-                    )
-            except Exception:
-                return Response(
-                    content="Unauthorized",
-                    status_code=401,
-                    headers={"WWW-Authenticate": 'Basic realm="Tistory Publisher Dashboard"'}
-                )
+            else:
+                return RedirectResponse(url="/login", status_code=302)
 
         return await call_next(request)
 
@@ -133,6 +138,43 @@ async def get_service_worker():
 @app.get("/favicon.ico")
 async def get_apple_touch_icon():
     return FileResponse(os.path.join(BASE_DIR, "static", "apple-touch-icon.png"), media_type="image/png")
+
+# Authentication Routes (HTML Form + 30-Day Persistent Cookie for Mobile PWA)
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse(request=request, name="login.html", context={"request": request, "error": None})
+
+@app.post("/login", response_class=HTMLResponse)
+async def process_login(request: Request, username: str = Form("admin"), password: str = Form("")):
+    expected_user = os.environ.get("DASHBOARD_USERNAME", "admin")
+    expected_pass = os.environ.get("DASHBOARD_PASSWORD", "").strip()
+
+    is_user_valid = secrets.compare_digest(username, expected_user)
+    is_pass_valid = secrets.compare_digest(password, expected_pass)
+
+    if is_user_valid and is_pass_valid:
+        token = hashlib.sha256(f"{expected_user}:{expected_pass}".encode("utf-8")).hexdigest()
+        response = RedirectResponse(url="/", status_code=302)
+        response.set_cookie(
+            key="session_auth",
+            value=token,
+            max_age=30 * 86400,  # 30 days
+            httponly=True,
+            samesite="lax"
+        )
+        return response
+
+    return templates.TemplateResponse(
+        request=request, 
+        name="login.html", 
+        context={"request": request, "error": "사용자 이름 또는 비밀번호가 올바르지 않습니다."}
+    )
+
+@app.get("/logout")
+async def process_logout():
+    response = RedirectResponse(url="/login", status_code=302)
+    response.delete_cookie("session_auth")
+    return response
 
 @app.get("/api/latest-post-event")
 async def get_latest_post_event(last_id: int = 0):
