@@ -17,9 +17,8 @@ from config.prompts import TOPIC_DISCOVERY_PROMPT, ARTICLE_GENERATION_PROMPT
 
 logger = logging.getLogger(__name__)
 
-# Fallback model list in order of priority (3.7 -> 3.5 -> 3.5-lite -> 2.5)
+# Fallback model list in order of priority (3-tier safe cascade: 3.5 -> 3.5-lite -> 2.5)
 FALLBACK_TEXT_MODELS = [
-    "gemini-3.7-flash",
     "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
     "gemini-2.5-flash",

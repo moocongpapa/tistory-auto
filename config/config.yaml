@@ -7,7 +7,7 @@ adsense:
 ai:
   image_model: imagen-3.0-generate-002
   temperature: 0.7
-  text_model: gemini-3.7-flash
+  text_model: gemini-3.5-flash
 app:
   log_level: INFO
   name: Tistory Multi-Blog Auto Publisher
