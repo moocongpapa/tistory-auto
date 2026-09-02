@@ -163,14 +163,39 @@ class GeminiClient:
     ) -> Dict[str, Any]:
         """Select a fresh, high-CTR long-tail topic combining static and real-time trends."""
         self._ensure_client()
-        prev_topics_str = "\n".join(previous_topics) if previous_topics else ("(No previous post history)" if language == "en" else "(이전 포스팅 이력 없음)")
-        trends_str = ", ".join(trend_keywords) if trend_keywords else ("(No real-time trends available)" if language == "en" else "(실시간 트렌드 정보 없음)")
+        
+        # Safely convert any dict or object items into pure strings
+        safe_prev_topics = []
+        if previous_topics:
+            for t in previous_topics:
+                if isinstance(t, str):
+                    safe_prev_topics.append(t)
+                elif isinstance(t, dict):
+                    safe_prev_topics.append(f"- [{t.get('keyword', '')}] {t.get('title', '')}")
+                else:
+                    safe_prev_topics.append(str(t))
+
+        safe_trends = []
+        if trend_keywords:
+            for t in trend_keywords:
+                if isinstance(t, str):
+                    safe_trends.append(t)
+                elif isinstance(t, dict):
+                    safe_trends.append(t.get('query', str(t)))
+                else:
+                    safe_trends.append(str(t))
+
+        safe_keywords = [k if isinstance(k, str) else str(k) for k in (keywords or [])]
+
+        prev_topics_str = "\n".join(safe_prev_topics) if safe_prev_topics else ("(No previous post history)" if language == "en" else "(이전 포스팅 이력 없음)")
+        trends_str = ", ".join(safe_trends) if safe_trends else ("(No real-time trends available)" if language == "en" else "(실시간 트렌드 정보 없음)")
+        keywords_str = ", ".join(safe_keywords)
 
         template = TOPIC_DISCOVERY_PROMPT_EN if language == "en" else TOPIC_DISCOVERY_PROMPT
         prompt = template.format(
             blog_name=blog_name,
             theme_name=theme_name,
-            keywords=", ".join(keywords),
+            keywords=keywords_str,
             trend_keywords=trends_str,
             previous_topics=prev_topics_str
         )
