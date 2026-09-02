@@ -12,6 +12,9 @@ app:
   log_level: INFO
   name: Tistory Multi-Blog Auto Publisher
   version: 2.5.0
+coupang:
+  enabled: true
+  tracking_id: moocongpapa
 blogs:
 - enabled: true
   id: blog_1

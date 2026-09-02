@@ -35,9 +35,10 @@ class CoupangPartnersManager:
     def __init__(self):
         self.access_key = os.environ.get("COUPANG_ACCESS_KEY")
         self.secret_key = os.environ.get("COUPANG_SECRET_KEY")
-        self.tracking_id = os.environ.get("COUPANG_TRACKING_ID", "").strip()
+        self.tracking_id = os.environ.get("COUPANG_TRACKING_ID", "moocongpapa").strip() or "moocongpapa"
         self.custom_link = os.environ.get("COUPANG_CUSTOM_LINK", "").strip()
         self.session = requests.Session()
+        logger.info(f"CoupangPartnersManager initialized (Tracking ID: {self.tracking_id})")
 
     def is_configured(self) -> bool:
         # Returns True because default partner category links are always active!
