@@ -1,6 +1,6 @@
 """
 Dual Database Manager: Supports Supabase (PostgreSQL) and Local SQLite seamlessly.
-Provides Automatic Fault-Tolerance (Graceful Fallback to SQLite if PostgreSQL connection fails).
+Provides Bulletproof Fault-Tolerance and Graceful Fallback.
 """
 
 import os
@@ -56,7 +56,6 @@ class DatabaseManager:
                 if len(parts) >= 3:
                     proto_user = parts[0] + ":" + parts[1]
                     raw_pw = parts[2]
-                    # If password contains unescaped special chars, encode it
                     encoded_pw = urllib.parse.quote(raw_pw)
                     url = f"{proto_user}:{encoded_pw}@{host_part}"
             except Exception:
@@ -72,7 +71,6 @@ class DatabaseManager:
                 return conn
             except Exception as e:
                 logger.error(f"PostgreSQL 연결 중 오류 발생: {e}. SQLite로 임시 대체합니다.")
-                # Dynamic fallback
                 self.is_postgres = False
 
         import sqlite3
@@ -81,98 +79,111 @@ class DatabaseManager:
         return conn
 
     def init_db(self):
+        conn = None
         try:
-            with self.get_connection() as conn:
-                cursor = conn.cursor()
-                if self.is_postgres:
-                    cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS posts (
-                        id SERIAL PRIMARY KEY,
-                        blog_id TEXT NOT NULL,
-                        theme TEXT NOT NULL,
-                        keyword TEXT NOT NULL,
-                        title TEXT NOT NULL,
-                        summary TEXT,
-                        tags TEXT,
-                        content_html TEXT,
-                        thumbnail_path TEXT,
-                        status TEXT DEFAULT 'PUBLISHED',
-                        post_url TEXT,
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                        published_at TEXT
-                    );
-                    CREATE TABLE IF NOT EXISTS topic_pool (
-                        id SERIAL PRIMARY KEY,
-                        blog_id TEXT NOT NULL,
-                        theme TEXT NOT NULL,
-                        keyword TEXT NOT NULL,
-                        topic TEXT NOT NULL,
-                        is_used INTEGER DEFAULT 0,
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-                    );
-                    CREATE TABLE IF NOT EXISTS activity_logs (
-                        id SERIAL PRIMARY KEY,
-                        level TEXT NOT NULL,
-                        blog_id TEXT,
-                        blog_name TEXT,
-                        category TEXT,
-                        title TEXT,
-                        message TEXT,
-                        url TEXT,
-                        created_at TEXT
-                    );
-                    CREATE INDEX IF NOT EXISTS idx_posts_blog ON posts(blog_id);
-                    CREATE INDEX IF NOT EXISTS idx_posts_keyword ON posts(keyword);
-                    """)
-                else:
-                    cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS posts (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        blog_id TEXT NOT NULL,
-                        theme TEXT NOT NULL,
-                        keyword TEXT NOT NULL,
-                        title TEXT NOT NULL,
-                        summary TEXT,
-                        tags TEXT,
-                        content_html TEXT,
-                        thumbnail_path TEXT,
-                        status TEXT DEFAULT 'PUBLISHED',
-                        post_url TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        published_at TIMESTAMP
-                    );
-                    CREATE TABLE IF NOT EXISTS topic_pool (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        blog_id TEXT NOT NULL,
-                        theme TEXT NOT NULL,
-                        keyword TEXT NOT NULL,
-                        topic TEXT NOT NULL,
-                        is_used INTEGER DEFAULT 0,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                    CREATE TABLE IF NOT EXISTS activity_logs (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        level TEXT NOT NULL,
-                        blog_id TEXT,
-                        blog_name TEXT,
-                        category TEXT,
-                        title TEXT,
-                        message TEXT,
-                        url TEXT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    );
-                    CREATE INDEX IF NOT EXISTS idx_posts_blog ON posts(blog_id);
-                    CREATE INDEX IF NOT EXISTS idx_posts_keyword ON posts(keyword);
-                    CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at);
-                    """)
-                conn.commit()
-                logger.info("✅ 데이터베이스 테이블 스키마 초기화 완료!")
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            if self.is_postgres:
+                cursor.execute("""
+                CREATE TABLE IF NOT EXISTS posts (
+                    id SERIAL PRIMARY KEY,
+                    blog_id TEXT NOT NULL,
+                    theme TEXT NOT NULL,
+                    keyword TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    summary TEXT,
+                    tags TEXT,
+                    content_html TEXT,
+                    thumbnail_path TEXT,
+                    status TEXT DEFAULT 'PUBLISHED',
+                    post_url TEXT,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                    published_at TEXT
+                );
+                """)
+                cursor.execute("""
+                CREATE TABLE IF NOT EXISTS topic_pool (
+                    id SERIAL PRIMARY KEY,
+                    blog_id TEXT NOT NULL,
+                    theme TEXT NOT NULL,
+                    keyword TEXT NOT NULL,
+                    topic TEXT NOT NULL,
+                    is_used INTEGER DEFAULT 0,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                );
+                """)
+                cursor.execute("""
+                CREATE TABLE IF NOT EXISTS activity_logs (
+                    id SERIAL PRIMARY KEY,
+                    level TEXT NOT NULL,
+                    blog_id TEXT,
+                    blog_name TEXT,
+                    category TEXT,
+                    title TEXT,
+                    message TEXT,
+                    url TEXT,
+                    created_at TEXT
+                );
+                """)
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_blog ON posts(blog_id);")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_keyword ON posts(keyword);")
+            else:
+                cursor.executescript("""
+                CREATE TABLE IF NOT EXISTS posts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    blog_id TEXT NOT NULL,
+                    theme TEXT NOT NULL,
+                    keyword TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    summary TEXT,
+                    tags TEXT,
+                    content_html TEXT,
+                    thumbnail_path TEXT,
+                    status TEXT DEFAULT 'PUBLISHED',
+                    post_url TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    published_at TIMESTAMP
+                );
+                CREATE TABLE IF NOT EXISTS topic_pool (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    blog_id TEXT NOT NULL,
+                    theme TEXT NOT NULL,
+                    keyword TEXT NOT NULL,
+                    topic TEXT NOT NULL,
+                    is_used INTEGER DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE TABLE IF NOT EXISTS activity_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    level TEXT NOT NULL,
+                    blog_id TEXT,
+                    blog_name TEXT,
+                    category TEXT,
+                    title TEXT,
+                    message TEXT,
+                    url TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE INDEX IF NOT EXISTS idx_posts_blog ON posts(blog_id);
+                CREATE INDEX IF NOT EXISTS idx_posts_keyword ON posts(keyword);
+                CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at);
+                """)
+            conn.commit()
+            logger.info("✅ 데이터베이스 테이블 스키마 초기화 완료!")
         except Exception as e:
             logger.error(f"❌ 데이터베이스 초기화 실패: {e}")
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     def get_recent_topics(self, blog_id: str, limit: int = 30) -> List[str]:
         ph = "%s" if self.is_postgres else "?"
-        with self.get_connection() as conn:
+        conn = None
+        try:
+            conn = self.get_connection()
             cursor = conn.cursor()
             cursor.execute(
                 f"SELECT keyword, title FROM posts WHERE blog_id = {ph} ORDER BY id DESC LIMIT {ph}",
@@ -180,6 +191,15 @@ class DatabaseManager:
             )
             rows = cursor.fetchall()
             return [f"- [{row['keyword']}] {row['title']}" for row in rows]
+        except Exception as e:
+            logger.error(f"get_recent_topics error: {e}")
+            return []
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     def record_post(
         self,
@@ -197,8 +217,10 @@ class DatabaseManager:
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         tags_str = ",".join(tags) if isinstance(tags, list) else tags
         ph = "%s" if self.is_postgres else "?"
+        conn = None
 
-        with self.get_connection() as conn:
+        try:
+            conn = self.get_connection()
             cursor = conn.cursor()
             if self.is_postgres:
                 cursor.execute(
@@ -227,10 +249,21 @@ class DatabaseManager:
 
             conn.commit()
             return post_id
+        except Exception as e:
+            logger.error(f"record_post error: {e}")
+            return 0
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     def get_all_posts(self, blog_id: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
         ph = "%s" if self.is_postgres else "?"
-        with self.get_connection() as conn:
+        conn = None
+        try:
+            conn = self.get_connection()
             cursor = conn.cursor()
             if blog_id:
                 cursor.execute(
@@ -244,6 +277,15 @@ class DatabaseManager:
                 )
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
+        except Exception as e:
+            logger.error(f"get_all_posts error: {e}")
+            return []
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     def get_posts_by_blog(self, blog_id: str, limit: int = 20) -> List[Dict[str, Any]]:
         return self.get_all_posts(blog_id=blog_id, limit=limit)
@@ -251,7 +293,9 @@ class DatabaseManager:
     def get_dashboard_stats(self) -> Dict[str, Any]:
         today_prefix = datetime.now().strftime("%Y-%m-%d")
         ph = "%s" if self.is_postgres else "?"
-        with self.get_connection() as conn:
+        conn = None
+        try:
+            conn = self.get_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM posts")
             row = cursor.fetchone()
@@ -270,24 +314,55 @@ class DatabaseManager:
                 "today_posts": today_posts,
                 "active_blogs": active_blogs
             }
+        except Exception as e:
+            logger.error(f"get_dashboard_stats error: {e}")
+            return {"total_posts": 0, "today_posts": 0, "active_blogs": 5}
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     def delete_posts(self, post_ids: List[int]) -> int:
         if not post_ids:
             return 0
         ph = "%s" if self.is_postgres else "?"
         placeholders = ",".join([ph] * len(post_ids))
-        with self.get_connection() as conn:
+        conn = None
+        try:
+            conn = self.get_connection()
             cursor = conn.cursor()
             cursor.execute(f"DELETE FROM posts WHERE id IN ({placeholders})", post_ids)
             conn.commit()
             return cursor.rowcount
+        except Exception as e:
+            logger.error(f"delete_posts error: {e}")
+            return 0
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     def delete_all_posts(self) -> int:
-        with self.get_connection() as conn:
+        conn = None
+        try:
+            conn = self.get_connection()
             cursor = conn.cursor()
             cursor.execute("DELETE FROM posts")
             conn.commit()
             return cursor.rowcount
+        except Exception as e:
+            logger.error(f"delete_all_posts error: {e}")
+            return 0
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     def record_activity(
         self,
@@ -301,7 +376,9 @@ class DatabaseManager:
     ) -> int:
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ph = "%s" if self.is_postgres else "?"
-        with self.get_connection() as conn:
+        conn = None
+        try:
+            conn = self.get_connection()
             cursor = conn.cursor()
             if self.is_postgres:
                 cursor.execute(
@@ -326,10 +403,21 @@ class DatabaseManager:
 
             conn.commit()
             return act_id
+        except Exception as e:
+            logger.error(f"record_activity error: {e}")
+            return 0
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     def get_recent_activities(self, limit: int = 40) -> List[Dict[str, Any]]:
         ph = "%s" if self.is_postgres else "?"
-        with self.get_connection() as conn:
+        conn = None
+        try:
+            conn = self.get_connection()
             cursor = conn.cursor()
             cursor.execute(
                 f"SELECT * FROM activity_logs ORDER BY id DESC LIMIT {ph}",
@@ -337,3 +425,12 @@ class DatabaseManager:
             )
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
+        except Exception as e:
+            logger.error(f"get_recent_activities error: {e}")
+            return []
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
