@@ -9,7 +9,7 @@ TOPIC_DISCOVERY_PROMPT = """
 [블로그 정보]
 - 블로그명: {blog_name}
 - 테마명: {theme_name}
-- 기본 키워드 풀: {keywords}
+- 기본 시드 키워드 풀: {keywords}
 
 [현재 대한민국 실시간 검색어 및 트렌드 키워드]
 {trend_keywords}
@@ -17,10 +17,25 @@ TOPIC_DISCOVERY_PROMPT = """
 [최근 발행된 글 목록 (🚫 중복 및 유사 주제 절대 금지)]
 {previous_topics}
 
-[기획 미션 & 엄격한 중복 방지 규칙]
-1. **절대 중복 금지**: 위 [최근 발행된 글 목록]에 이미 작성된 글들과 **주제(Topic), 핵심 소재, 타겟 문제 상황, 키워드가 절대로 겹치거나 중복되어서는 안 됩니다**.
-2. **신선하고 독창적인 기획**: '실시간 트렌드' 및 '기본 키워드 풀'에서 기존 글들과 완전히 차별화된 새로운 세부 롱테일 키워드와 각도를 발굴하세요.
-3. **높은 CTR 가제목**: 검색자의 호기심과 실질적 클릭을 유도할 수 있는 매력적이고 구체적인 제목을 제안하세요.
+[무한 주제 확장 기획 미션 & 10가지 다각도 앵글 발굴 원칙]
+1. **시드 키워드의 무한 확장 (절대 고정 단어에 갇히지 말 것)**:
+   - 주어진 '기본 시드 키워드 풀'은 단지 아이디어의 씨앗일 뿐입니다. 해당 분야에서 **사람들이 실제로 검색창에 질문하고 고민하는 무수히 다양한 세부 하위 롱테일 주제(Niche Topic)**로 자유롭고 넓게 확장하세요.
+   
+2. **10가지 다각도 기획 앵글 중 하나를 적극 채택**:
+   - ① 초보자 완벽 입문 / 첫 시작 가이드
+   - ② 실전 비용 절감 & 가성비 극대화 꿀팁
+   - ③ 양자택일 비교 분석 (A vs B 장단점 심층 비교)
+   - ④ 흔히 하는 치명적인 실수 & 주의사항 방지법
+   - ⑤ 직장인/1인가구/초보자 등 구체적 타겟 맞춤형 실전 솔루션
+   - ⑥ 시간 단축 & 업무/생활 자동화 치트키
+   - ⑦ 2026 최신 정책 변경/트렌드/업데이트 핵심 정리
+   - ⑧ 실제 30일 실천 경험 및 솔직 리뷰
+   - ⑨ 추천 순위 BEST TOP 5 엄선 비교
+   - ⑩ 놓치기 쉬운 숨은 혜택/환급금/숨은 기능 발굴
+
+3. **절대 중복 금지 & 높은 CTR(클릭률) 제목**:
+   - 위 [최근 발행된 글 목록]과 핵심 소재나 타겟 문제가 겹치지 않는 완전히 신선한 주제여야 합니다.
+   - 검색자의 궁금증을 자극하고 실질적 혜택을 명시한 매력적인 제목을 제안하세요.
 
 [반환 형식 - 반드시 순수 JSON 포맷으로만 응답]:
 {{
@@ -109,7 +124,7 @@ You are a world-class Global SEO Content Strategist and Google Search Traffic Sp
 [Blog Information]
 - Blog Name: {blog_name}
 - Theme: {theme_name}
-- Base Keywords: {keywords}
+- Base Seed Keywords: {keywords}
 
 [Global Trending Topics & Keywords]
 {trend_keywords}
@@ -117,10 +132,25 @@ You are a world-class Global SEO Content Strategist and Google Search Traffic Sp
 [Recent Published Articles (STRICT NON-DUPLICATION)]:
 {previous_topics}
 
-[Planning Mission & Strict Deduplication Rules]:
-1. **Zero Duplicate Rule**: You must NOT overlap with any of the recent articles listed above. Create a completely fresh angle, distinct target problem, and unique long-tail search intent.
-2. **High-CPC & Search Intent**: Combine global tech/lifestyle trends with the base theme to pick ONE highly actionable long-tail search keyword with strong commercial/informational intent.
-3. **High-CTR Working Title**: Craft a compelling title that maximizes click-through rate (How-to, Numbered, Problem-Solving, or Comparison).
+[Infinite Topic Expansion Mission & 10 Strategic Angles]:
+1. **Infinite Expansion from Seed (Never stay boxed into fixed words)**:
+   - The 'Base Seed Keywords' are merely starting seeds. Explore an expansive variety of specific, high-intent niche sub-topics that real users actively search for on Google.
+
+2. **Adopt One of the 10 High-CTR Content Angles**:
+   - ① Beginner's Zero-to-Hero Quickstart Blueprint
+   - ② Budget Optimization & Cost-Cutting Hacks
+   - ③ Head-to-Head Comparison (A vs B In-Depth Shootout)
+   - ④ Critical Pitfalls, Traps & How to Avoid Common Mistakes
+   - ⑤ Persona-Specific Solution (Remote workers, Solo creators, Busy professionals)
+   - ⑥ Extreme Time-Saving & Workflow Automation Secrets
+   - ⑦ 2026 Latest Updates, Algorithm Changes & Future Trends
+   - ⑧ Honest 30-Day Field Test & Real-World Experience
+   - ⑨ Curated TOP 5 Best-in-Class Tools / Gear / Methods
+   - ⑩ Hidden Features, Under-the-Radar Hacks & Overlooked Opportunities
+
+3. **Zero Duplicate Rule & High-CTR Title**:
+   - Strictly avoid overlap with any recent articles.
+   - Craft a magnetic title promising concrete value, measurable outcomes, or clarity.
 
 [Response Format - Return PURE JSON only]:
 {{

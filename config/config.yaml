@@ -29,160 +29,214 @@ publishing:
   add_toc: true
   headless: true
 blogs:
-- enabled: true
-  id: blog_1
-  language: en
+- id: blog_1
   name: Smart Work Lab (AI & Tech Productivity)
+  subdomain: smartwork-lab
+  language: en
+  enabled: true
   schedule_times:
   - 07:00
   - '12:30'
   - '18:30'
-  subdomain: smartwork-lab
   themes:
-  - keywords:
-    - Best Free AI Tools for Productivity and Remote Work 2026
-    - How to Automate Excel Reports Using ChatGPT Prompts
-    - Top No-Code Automation Tools: Zapier vs Make Comparison
-    - Best AI Coding Assistants: Cursor vs GitHub Copilot Guide
+  - name: AI & Automation
+    keywords:
+    - Best Free AI Productivity Tools 2026
+    - ChatGPT Prompts for Automated Office Work
+    - 'Top No-Code Automation Tools: Zapier vs Make vs n8n'
+    - 'AI Coding Assistants Comparison: Cursor vs Copilot vs Windsurf'
     - Free AI Image Generators for Creators and Marketers
-    - Notion AI Workspace Setup for Workflow Optimization
-    name: AI & Automation
-  - keywords:
-    - Best Budget Noise Cancelling Headphones for Focus & Commute
-    - M4 MacBook Air vs iPad Pro for Writers & Remote Workers
-    - Top Ergonomic Desk Accessories for Home Office Setup
-    - Smartwatch Comparison: Apple Watch vs Galaxy Watch for Health
-    - Best Portable Monitors for Remote Work & Digital Nomads
-    name: Tech Gear & Gadgets
-  - keywords:
-    - Best Free Project Management Tools for Small Teams
-    - Time Blocking & Pomodoro Apps to Maximize Deep Work
-    - Cloud SaaS Trends and Top Business Software in 2026
-    - Browser Extensions for Extreme Productivity and Focus
-    name: Productivity & SaaS
-- enabled: true
-  id: blog_2
-  language: ko
+    - Notion AI Workflow Optimization and Dashboard Setup
+    - AI Voice Cloning and Text-to-Speech Tools for Content Creators
+    - Automated Web Scraping Without Code Using AI Tools
+    - 'AI Presentation Makers: Gamma vs Beautiful.ai Review'
+    - How to Build Custom GPTs for Daily Personal Workflows
+    - 'Local LLM Setup Guide: Running DeepSeek & Llama on Mac/PC'
+    - AI Meeting Summarizers and Real-Time Transcription Apps
+  - name: Tech Gear & Gadgets
+    keywords:
+    - Best Noise Cancelling Headphones for Focus & Commuting
+    - M4 MacBook Air vs iPad Pro for Writers & Digital Nomads
+    - Ergonomic Desk Accessories for Pain-Free Remote Work
+    - 'Smartwatch Comparison: Apple Watch vs Garmin vs Galaxy Watch'
+    - Best Portable Monitors for Dual-Screen Remote Setup
+    - 'Mechanical Keyboards for Writers: Quiet & Ergonomic Options'
+    - GaN Fast Chargers and Multi-Device Power Banks Review
+    - Standing Desk Converters vs Motorized Standing Desks Guide
+    - Minimalist Tech Backpacks and EDC Gear for Travelers
+    - Best 4K Webcams and Microphone Setups for Crystal-Clear Calls
+  - name: Productivity & SaaS
+    keywords:
+    - Best Project Management Software for Freelancers and Solopreneurs
+    - Time Blocking Apps and Pomodoro Tools for Deep Focus
+    - 'Cloud Storage & Sync Comparison: Google Drive vs Dropbox vs iCloud'
+    - Top Google Chrome Extensions for Extreme Productivity
+    - 'Password Managers Comparison: 1Password vs Bitwarden 2026'
+    - 'Markdown Note-Taking Apps: Obsidian vs Notion vs Logseq'
+    - Email Inbox Zero Strategies and Best Email Client Apps
+    - Second Brain Digital Organization System Blueprint
+    - Solo Business SaaS Stack to Run Automated 1-Person Operations
+- id: blog_2
   name: Money Roadmap 24 (금융&재테크)
+  subdomain: finance-roadmap-for-future
+  language: ko
+  enabled: true
   schedule_times:
   - 07:20
   - '12:50'
   - '18:50'
-  subdomain: finance-roadmap-for-future
   themes:
-  - keywords:
-    - 2026 연말정산 절세 팁 놓치면 손해보는 공제 항목 체크리스트
-    - 청년도약계좌 가입 조건 변경 사항 만기 수령액 계산
-    - 고금리 파킹통장 금리 비교 토스뱅크 카카오뱅크 케이뱅크 2026
+  - name: 예적금 & 파킹통장
+    keywords:
+    - 2026 연말정산 절세 팁 놓치면 손해보는 소득공제 세액공제 체크리스트
+    - 청년도약계좌 가입 조건 정부 기여금 만기 수령액 계산
+    - 고금리 파킹통장 금리 비교 토스뱅크 카카오뱅크 케이뱅크 저축은행
     - 사회초년생 통장 쪼개기 4단계 급여 저축 투자 비상금 분리법
-    - 신용점수 올리는 방법 신용카드 사용 패턴 최적화
-    - 개인연금 IRP 세액공제 한도 연말정산 절세 전략
-    name: 예적금 & 파킹통장
-  - keywords:
-    - 미국 배당주 ETF 추천 SCHD VYM 적립식 투자 비교 2026
-    - 국내 고배당주 추천 은행주 배당 수익률 순위 비교
-    - 주식 초보 투자 시작 방법 증권사 수수료 비교 계좌 개설
-    - S&P500 ETF vs 나스닥100 ETF 장기 투자 수익률 비교
-    - 채권 ETF 투자 기초 금리 인하기 채권 가격 전망
-    - ISA 계좌 해외 ETF 투자 절세 매매 차익 비과세 한도
-    name: 주식 & ETF 투자
-  - keywords:
-    - 가계부 앱 추천 무료 뱅크샐러드 토스 가계부 비교 후기
-    - 종잣돈 1억 모으기 현실적 플랜 월급별 저축 로드맵
-    - 신혼부부 재테크 공동명의 vs 단독명의 주택 절세 전략
-    - 종합소득세 신고 프리랜서 절세 방법 경비 처리 가이드
-    name: 재테크 기본상식
-- enabled: true
-  id: blog_3
-  language: ko
+    - 신용점수 올리는 법 900점 이상 달성 신용카드 사용 패턴 꿀팁
+    - 개인연금 IRP 세액공제 한도 및 연말정산 절세 수익률 관리법
+    - CMA 통장 종류별 비교 RP형 MMF형 MWT형 장단점 및 추천
+    - 금리 인하기 고정금리 vs 변동금리 예금 풍차돌리기 실전 전략
+  - name: 주식 & ETF 투자
+    keywords:
+    - 미국 배당 다우존스 ETF 추천 SCHD VYM 장기 적립식 투자 비교
+    - 국내 고배당주 추천 은행주 금융주 배당 수익률 순위 비교
+    - 주식 초보 투자 시작 가이드 증권사 수수료 비교 계좌 개설 방법
+    - S&P500 ETF vs 나스닥100 QQQ 10년 장기 투자 수익률 비교
+    - 미국 채권 ETF 투자 기초 금리 인하기 TLT IEF 수익률 전망
+    - ISA 중개형 계좌 해외 ETF 투자 절세 매매차익 비과세 한도 활용법
+    - 월배당 ETF 추천 미국 커버드콜 JEPI JEPQ 장단점과 원금 손실 위험
+    - 인도 주식 ETF 및 글로벌 신흥국 분산 투자 포트폴리오 전략
+  - name: 재테크 기본상식
+    keywords:
+    - 가계부 어플 추천 무료 뱅크샐러드 토스 편한가계부 비교 후기
+    - 종잣돈 1억 모으기 현실적인 기간별 월급 저축 플랜
+    - 신혼부부 재테크 공동명의 vs 단독명의 주택 취득세 양도세 절세 전략
+    - 종합소득세 신고 프리랜서 부업러 3.3% 환급받는 경비 처리 가이드
+    - 사회초년생 첫 신용카드 vs 체크카드 혜택 비교 소비 습관 잡기
+    - 자동차 유지비 절약법 자동차 보험 다이렉트 비교 주유 할인 카드
+    - 생애최초 주택마련 디딤돌 대출 보금자리론 금리 자격 조건 비교
+    - 무지출 챌린지 식비 줄이기 현실적인 1주일 5만원 식단 관리 노하우
+- id: blog_3
   name: 정책 알리미 365 (정부 지원금&생활정보)
+  subdomain: policy-finder365
+  language: ko
+  enabled: true
   schedule_times:
   - 07:40
   - '13:10'
   - '19:10'
-  subdomain: policy-finder365
   themes:
-  - keywords:
-    - 2026 청년월세 지원 자격 조건 신청 방법 필요 서류 총정리
-    - 국민내일배움카드 발급 신청 방법 국비지원 교육 과정 추천
-    - 청년 전세자금 대출 조건 금리 비교 버팀목 전세 대출
+  - name: 청년 정책
+    keywords:
+    - 2026 청년월세 특별지원 자격 조건 신청 방법 필요 서류 총정리
+    - 국민내일배움카드 발급 신청 자격 국비지원 IT 자격증 교육 추천
+    - 청년 전세자금 대출 버팀목 전세 대출 조건 금리 한도 비교
     - 2026 청년 주거지원 정책 및 월세 환급 신청 방법
-    name: 청년 정책
-  - keywords:
-    - 1인 가구 전기세 절약 꿀팁 여름 겨울 냉난방비 반토막
-    - 해외 항공권 최저가 예매 꿀팁 시기별 비교 사이트 추천
-    - 자취생 월 생활비 100만원 절약 식비 관리 노하우
-    - 중고거래 사기 예방법 당근마켓 번개장터 안전 거래 체크리스트
-    - 자동차 세금 연납 할인 신청 방법 자동차세 절약 꿀팁
-    name: 생활 지원
-  - keywords:
-    - 숨은 정부 지원금 찾기 보조금24 복지로 원스톱 조회 방법
-    - 근로장려금 신청 기간 자격 조건 지급일 계산 방법
-    - 출산 육아 지원금 총정리 첫만남이용권 부모급여 아동수당
-    - 2026년 하반기 달라지는 정책 제도 변경 사항 총정리
-    - K-패스 교통비 환급 신청 방법 카드사별 혜택 비교 정리
-    - 국민건강보험 환급금 조회 미수령 의료비 돌려받는 방법
-    name: 복지 혜택
-- enabled: true
-  id: blog_4
-  language: en
+    - 청년 일자리 도약 장려금 기업 및 청년 지원 혜택 신청 가이드
+    - 청년 자격증 응시료 지원 대상 지자체별 환급 신청 방법
+    - 청년 취업성공패키지 국민취업지원제도 1유형 2유형 구직수당 혜택
+    - 청년 창업 지원금 정부 무상환 창업패키지 예비창업패키지 공고
+  - name: 생활 지원
+    keywords:
+    - 1인 가구 전기세 가스비 절약 꿀팁 에너지 캐시백 신청 환급금
+    - 해외 항공권 최저가 예매 시기별 비교 사이트 스카이스캐너 구글플라이트
+    - 자취생 월 생활비 100만원 절약 식비 고정비 다이어트 팁
+    - 중고거래 사기 예방법 당근마켓 번개장터 안전 결제 체크리스트
+    - 자동차 세금 연납 할인 신청 방법 위택스 1월 3월 6월 9월 공제율
+    - 알뜰폰 요금제 비교 추천 자급제폰 결합 무제한 요금제 갈아타기
+    - 여권 재발급 온라인 신청 정부24 수수료 준비물 사진 규정
+    - 이사 비용 줄이기 손없는 날 피하기 포장이사 견적 비교 체크리스트
+  - name: 복지 혜택
+    keywords:
+    - 숨은 정부 지원금 찾기 보조금24 복지로 원스톱 맞춤 조회 방법
+    - 근로장려금 자녀장려금 정기 반기 신청 기간 자격 조건 지급일
+    - 출산 육아 지원금 첫만남이용권 부모급여 아동수당 2026 혜택 총정리
+    - 2026년 달라지는 주요 복지 정책 복지 멤버십 가입 방법
+    - K-패스 교통카드 환급 신청 카드사별 추가 혜택 기후동행카드 비교
+    - 국민건강보험 환급금 조회 본인부담상한제 미수령 환급금 신청
+    - 국민연금 조기수령 vs 연기수령 손익분기점 계산 및 예상 수령액
+    - 차상위계층 기초생활수급자 조건 혜택 생계급여 의료급여 주거급여
+- id: blog_4
   name: Wellness Routine Lab (Biohacking & Health)
+  subdomain: wellness-routine
+  language: en
+  enabled: true
   schedule_times:
   - 08:00
   - '13:30'
   - '19:30'
-  subdomain: wellness-routine
   themes:
-  - keywords:
-    - Best Supplement Stack for Chronic Fatigue and Brain Fog
-    - Magnesium Glycinate vs Threonate: Science-Backed Sleep Benefits
-    - Vitamin D3 and K2 Synergy: Optimal Dosage and Health Guide
-    - Nootropics for Memory and Focus: Beginner's Guide 2026
-    - Omega-3 Fish Oil vs Krill Oil: Heart & Joint Health Comparison
-    name: Supplements & Energy
-  - keywords:
-    - 4-7-8 Breathing Technique and Night Routine for Deep Sleep
-    - How to Lower Cortisol and Relieve Work Stress Naturally
-    - Circadian Rhythm Reset: Morning Sunlight and Sleep Hygiene
-    - Guided Mindfulness and Box Breathing for Anxiety Relief
-    name: Sleep & Stress Care
-  - keywords:
-    - 5-Minute Desk Ergonomics: Fix Forward Head Posture & Neck Pain
-    - 15-Minute Home Dumbbell Workout for Busy Professionals
-    - Daily Morning Mobility Routine for Stiff Back and Hips
-    - Walking Pad vs Under Desk Elliptical for Daily Office Steps
-    name: Posture & Home Fitness
-- enabled: true
-  id: blog_5
-  language: ko
+  - name: Supplements & Energy
+    keywords:
+    - Best Supplement Stack for Chronic Fatigue and Brain Fog Relief
+    - Magnesium Glycinate vs L-Threonate vs Citrate for Sleep and Anxiety
+    - 'Vitamin D3 and K2 Synergy: Optimal Dosage & Heart Health Guide'
+    - Natural Nootropics for Memory, Concentration and Executive Function
+    - 'Omega-3 Fish Oil vs Krill Oil vs Algal Oil: Triglyceride Absorption Guide'
+    - Creatine Monohydrate Benefits for Brain Health and Cognitive Performance
+    - 'Ashwagandha vs Rhodiola Rosea: Adaptogens for Adrenal Fatigue'
+    - CoQ10 Ubiquinol vs Ubiquinone for Cellular Energy & Longevity
+    - 'Electrolyte Powders Comparison: Best Hydration Supplements for Fasting'
+  - name: Sleep & Stress Care
+    keywords:
+    - 4-7-8 Breathing Technique and Science-Backed Night Routine for Deep Sleep
+    - 'How to Lower Cortisol Naturally: 7 Proven Ways to Reset Stress Hormones'
+    - 'Circadian Rhythm Reset: Morning Sunlight, Blue Light Blocking and Sleep Hygiene'
+    - Guided Mindfulness & Non-Sleep Deep Rest (NSDR) for Nervous System Regulation
+    - 'Hot Bath and Cold Shower Timing: Thermoregulation for Rapid Sleep Onset'
+    - 'Mouth Taping for Sleep: Benefits for Snoring, Oxygen Levels and Sleep Apnea'
+    - 'Sleep Tracker Accuracy: Oura Ring vs Whoop vs Apple Watch Sleep Stages'
+    - 'Caffeine Half-Life Management: When to Stop Drinking Coffee for REM Sleep'
+  - name: Posture & Home Fitness
+    keywords:
+    - '5-Minute Desk Ergonomics: Fix Forward Head Posture and Tech Neck Pain'
+    - 15-Minute Home Dumbbell Full Body Workout for Busy Professionals
+    - Daily Morning Mobility Routine for Stiff Lower Back and Tight Hips
+    - 'Walking Pad vs Under Desk Elliptical: Best Compact Treadmills for Work'
+    - 'Zone 2 Cardio Training: Heart Rate Calculation for Maximum Fat Burn'
+    - 'Intermittent Fasting 16:8 Protocol: Insulin Sensitivity & Autophagy Guide'
+    - Psoas Muscle Stretches to Relieve Sitting-Induced Lumbar Spine Tension
+    - 'Cold Plunge Therapy Benefits: Dopamine, Recovery and Immune Boosting'
+- id: blog_5
   name: Grow Mindset (자기계발 & 커리어)
+  subdomain: billionaire1004
+  language: ko
+  enabled: true
   schedule_times:
   - 08:20
   - '13:50'
   - '19:50'
-  subdomain: billionaire1004
   themes:
-  - keywords:
-    - 포모도로 시간 관리법 직장인 집중력 향상 앱 추천 활용법
-    - 미라클 모닝 루틴 5am 클럽 실천 방법 현실적 후기
-    - 미루는 습관 극복법 5초의 법칙 2분 규칙 실전 적용
-    - 노션 습관 트래커 무료 템플릿 매일 루틴 기록 방법
-    - 목표 달성 OKR 작성법 직장인 분기별 성과 관리 가이드
-    name: 시간 관리&습관
-  - keywords:
-    - 직장인 이직 준비 전략 경력 이력서 작성법 면접 질문 대비
-    - 연봉 협상 방법 이직 시 연봉 올리는 현실적 전략 5가지
-    - 칼퇴 부르는 보고서 작성법 상사가 OK하는 기획서 구조
-    - PREP 프레임워크 논리적 말하기 프레젠테이션 설득 기술
-    - 국비지원 IT 직무전환 부트캠프 추천 비교 취업률 후기
-    name: 업무 스킬&커리어
-  - keywords:
-    - 2026 자기계발서 베스트셀러 추천 리뷰 요약 TOP 5
-    - 번아웃 증후군 자가진단 극복 방법 회복탄력성 기르기
-    - 성장형 사고방식 훈련 방법 고정 마인드셋 vs 성장 마인드셋
-    - 직장인 멘탈 관리법 명상 저널링 감사일기 효과 후기
-    - 성공하는 사람들의 아침 습관 루틴 빌 게이츠 일론 머스크
-    name: 성장 도서&마인드
+  - name: 시간 관리&습관
+    keywords:
+    - 포모도로 시간 관리법 직장인 집중력 극대화 무료 앱 추천 활용법
+    - 미라클 모닝 5am 루틴 실천 방법 작심삼일 극복 현실적 후기
+    - 미루는 습관 완벽 극복 5초의 법칙과 2분 규칙 실전 적용 가이드
+    - 노션 습관 트래커 무료 템플릿 일간 주간 루틴 시각화 관리법
+    - 목표 달성 OKR KPI 작성법 분기별 핵심 결과 관리 실전 워크시트
+    - 타임블로킹 구글 캘린더 일정 관리로 딥워크 몰입 시간 확보하기
+    - 디지털 디톡스 실천법 스마트폰 스크린타임 반토막 도파민 단식
+    - 아주 작은 습관의 힘(Atomic Habits) 4단계 시스템 일상 설계법
+  - name: 업무 스킬&커리어
+    keywords:
+    - 직장인 이직 준비 로드맵 경력 기술서 작성법 및 면접 빈출 질문 대비
+    - 연봉 협상 성공 전략 이직 및 승진 시 연봉 15% 이상 올리는 팁
+    - 칼퇴를 부르는 한 장 기획서 보고서 작성법 상사가 승인하는 로직
+    - PREP 프레임워크 기반 논리적 스피치 회의 프레젠테이션 설득 기술
+    - 국비지원 IT 부트캠프 데이터 분석 AI 직무전환 취업률 현실 후기
+    - 직장인 부업 추천 무자본 지식 창업 전자책 PDF 출판 노하우
+    - 엑셀 실무 단축키 및 ChatGPT 활용 엑셀 함수 매크로 자동화
+    - 효과적인 커뮤니케이션 기술 직장 내 까다로운 사람과 일하는 대화법
+  - name: 성장 도서&마인드
+    keywords:
+    - 2026 자기계발서 베스트셀러 추천 핵심 요약 리뷰 TOP 5
+    - 번아웃 증후군 자가진단 테스트 극복 방법 회복탄력성 기르기
+    - 성장형 마인드셋 훈련 고정 마인드셋 깨고 실패 두려움 극복하기
+    - 직장인 멘탈 관리법 마음챙김 명상 저널링 감사일기 실전 효과
+    - 자수성가 부자들의 모닝 루틴과 독서 습관 빌 게이츠 일론 머스크
+    - 감정 기복 다스리기 멘탈 흔들릴 때 마음을 다잡는 심리학적 훈련
+    - 부의 추월차선 핵심 요약 파이프라인 구축을 위한 사고방식 전환
+    - '거인의 어깨에 올라타라: 인생의 멘토를 찾고 빠르게 성장하는 법'
 seo:
   auto_meta_description: true
   category_mapping: true
