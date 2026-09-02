@@ -65,192 +65,229 @@ class MultiBlogScheduler:
             return {"success": False, "error": "No themes"}
 
         logger.info(f"=== Starting Auto-Posting Pipeline for [{blog_name} ({subdomain})] ===")
-
-        # 1. Smart Round-Robin Theme Rotation based on DB history
-        last_posts = self.db.get_posts_by_blog(blog_id, limit=1)
-        if last_posts and themes:
-            last_theme_name = last_posts[0].get("theme")
-            theme_names = [t.get("name") for t in themes]
-            if last_theme_name in theme_names:
-                curr_idx = theme_names.index(last_theme_name)
-                next_idx = (curr_idx + 1) % len(themes)
-                theme = themes[next_idx]
-            else:
-                theme = themes[0]
-        else:
-            theme = random.choice(themes)
-
-        theme_name = theme.get("name")
-        keywords = theme.get("keywords", [])
-        language = blog_cfg.get("language", "ko")
-        logger.info(f"블로그 언어 설정: [{language.upper()}] | 선택된 테마: [{theme_name}]")
-
-        # 2. Fetch live real-time trend keywords
-        trend_keywords = self.trend_collector.get_trend_keywords_list(limit=8)
-
-        # 3. Get recent topics to prevent duplicates (Strict 30-post history check)
-        previous_topics = self.db.get_recent_topics(blog_id=blog_id, limit=30)
-        logger.info(f"기존 작성된 최근 {len(previous_topics)}개 글 내역과 중복 배제 필터링 적용 중...")
-
-        # 4. Discover fresh topic with Gemini (combining trends + static keywords)
-        logger.info(f"Discovering fresh topic for theme: {theme_name} ({language})...")
-        model_name = self.config.get("ai", {}).get("text_model", "gemini-3.5-flash")
-        topic_info = self.gemini.discover_topic(
+        self.db.record_activity(
+            level="INFO",
+            blog_id=blog_id,
             blog_name=blog_name,
-            theme_name=theme_name,
-            keywords=keywords,
-            previous_topics=previous_topics,
-            trend_keywords=trend_keywords,
-            model=model_name,
-            language=language
+            category=None,
+            title=f"[{blog_name}] 자동 포스팅 작업 시작",
+            message="트렌드 키워드 분석 및 AI 원고 생성 준비 중...",
+            url=None
         )
-        selected_keyword = topic_info.get("keyword", "핵심 주제")
-        selected_topic = topic_info.get("topic", f"{theme_name} 포스팅")
-        logger.info(f"Selected Keyword (중복 배제 완료): {selected_keyword} | Topic: {selected_topic}")
 
-        # 5. Generate SEO Article
-        logger.info(f"Generating SEO-optimized HTML article with Gemini ({language})...")
-        quality_cfg = self.config.get("publishing", {})
-        article = self.gemini.generate_article(
-            theme_name=theme_name,
-            keyword=selected_keyword,
-            topic=selected_topic,
-            model=model_name,
-            quality_config=quality_cfg,
-            language=language
-        )
-        title = article.get("title", f"{selected_keyword} Guide")
-        summary = article.get("summary", "")
-        content_html = article.get("content_html", "")
-        tags = article.get("tags", [selected_keyword])
-        image_prompt = article.get("thumbnail_image_prompt", "")
+        try:
+            # 1. Smart Round-Robin Theme Rotation based on DB history
+            last_posts = self.db.get_posts_by_blog(blog_id, limit=1)
+            if last_posts and themes:
+                last_theme_name = last_posts[0].get("theme")
+                theme_names = [t.get("name") for t in themes]
+                if last_theme_name in theme_names:
+                    curr_idx = theme_names.index(last_theme_name)
+                    next_idx = (curr_idx + 1) % len(themes)
+                    theme = themes[next_idx]
+                else:
+                    theme = themes[0]
+            else:
+                theme = random.choice(themes)
 
-        # 5-1. Inject Google AdSense Ads (Top, Mid, Bottom)
-        adsense_cfg = self.config.get("adsense", {})
-        if adsense_cfg.get("enabled", True):
-            ads_mgr = AdSenseManager(
-                pub_id=adsense_cfg.get("pub_id", "ca-pub-9856782529784947"),
-                enabled=adsense_cfg.get("enabled", True)
-            )
-            content_html = ads_mgr.inject_ads(content_html, slots=adsense_cfg)
+            theme_name = theme.get("name")
+            keywords = theme.get("keywords", [])
+            language = blog_cfg.get("language", "ko")
+            logger.info(f"블로그 언어 설정: [{language.upper()}] | 선택된 테마: [{theme_name}]")
 
-        # 5-2. Inject Coupang Partners Affiliate Product Recommendations (Only for Korean Blogs)
-        if language == "ko":
-            coupang_mgr = CoupangPartnersManager()
-            if coupang_mgr.is_configured():
-                product_box = coupang_mgr.generate_product_box_html(selected_keyword)
-                if product_box:
-                    content_html += product_box
-                    logger.info(f"쿠팡 파트너스 추천 상품 박스 자동 주입 완료: '{selected_keyword}'")
+            # 2. Fetch live real-time trend keywords
+            trend_keywords = self.trend_collector.get_trend_keywords_list(limit=8)
 
-        # 5-3. Inject Internal Links (Related Posts for Higher Pageviews & Ad Impressions)
-        link_count = self.config.get("seo", {}).get("internal_link_count", 2)
-        if link_count > 0:
-            content_html = self.internal_linker.inject_internal_links(
-                html_content=content_html,
-                blog_id=blog_id,
-                current_keyword=selected_keyword,
-                count=link_count,
+            # 3. Get recent topics to prevent duplicates (Strict 30-post history check)
+            previous_topics = self.db.get_recent_topics(blog_id=blog_id, limit=30)
+            logger.info(f"기존 작성된 최근 {len(previous_topics)}개 글 내역과 중복 배제 필터링 적용 중...")
+
+            # 4. Discover fresh topic with Gemini (combining trends + static keywords)
+            logger.info(f"Discovering fresh topic for theme: {theme_name} ({language})...")
+            model_name = self.config.get("ai", {}).get("text_model", "gemini-3.5-flash")
+            topic_info = self.gemini.discover_topic(
+                blog_name=blog_name,
+                theme_name=theme_name,
+                keywords=keywords,
+                previous_topics=previous_topics,
+                trend_keywords=trend_keywords,
+                model=model_name,
                 language=language
             )
-            logger.info(f"내부 관련 글 링크 박스 자동 주입 완료 (blog: {blog_id}, lang: {language})")
+            selected_keyword = topic_info.get("keyword", "핵심 주제")
+            selected_topic = topic_info.get("topic", f"{theme_name} 포스팅")
+            logger.info(f"Selected Keyword (중복 배제 완료): {selected_keyword} | Topic: {selected_topic}")
 
-        # 6. Generate Clean High-Res Photo Thumbnail (Curated Preset Pool)
-        thumbnail_path = None
-        if self.config.get("publishing", {}).get("generate_thumbnail", True):
-            thumbnail_path = self.thumbnail_gen.create_thumbnail(
-                title=title,
+            # 5. Generate SEO Article
+            logger.info(f"Generating SEO-optimized HTML article with Gemini ({language})...")
+            quality_cfg = self.config.get("publishing", {})
+            article = self.gemini.generate_article(
                 theme_name=theme_name,
-                blog_id=blog_id,
-                filename_prefix=f"{blog_id}_thumb"
+                keyword=selected_keyword,
+                topic=selected_topic,
+                model=model_name,
+                quality_config=quality_cfg,
+                language=language
+            )
+            title = article.get("title", f"{selected_keyword} Guide")
+            summary = article.get("summary", "")
+            content_html = article.get("content_html", "")
+            tags = article.get("tags", [selected_keyword])
+            image_prompt = article.get("thumbnail_image_prompt", "")
+
+            # 5-1. Inject Google AdSense Ads (Top, Mid, Bottom)
+            adsense_cfg = self.config.get("adsense", {})
+            if adsense_cfg.get("enabled", True):
+                ads_mgr = AdSenseManager(
+                    pub_id=adsense_cfg.get("pub_id", "ca-pub-9856782529784947"),
+                    enabled=adsense_cfg.get("enabled", True)
+                )
+                content_html = ads_mgr.inject_ads(content_html, slots=adsense_cfg)
+
+            # 5-2. Inject Coupang Partners Affiliate Product Recommendations (Only for Korean Blogs)
+            if language == "ko":
+                coupang_mgr = CoupangPartnersManager()
+                if coupang_mgr.is_configured():
+                    product_box = coupang_mgr.generate_product_box_html(selected_keyword)
+                    if product_box:
+                        content_html += product_box
+                        logger.info(f"쿠팡 파트너스 추천 상품 박스 자동 주입 완료: '{selected_keyword}'")
+
+            # 5-3. Inject Internal Links (Related Posts for Higher Pageviews & Ad Impressions)
+            link_count = self.config.get("seo", {}).get("internal_link_count", 2)
+            if link_count > 0:
+                content_html = self.internal_linker.inject_internal_links(
+                    html_content=content_html,
+                    blog_id=blog_id,
+                    current_keyword=selected_keyword,
+                    count=link_count,
+                    language=language
+                )
+                logger.info(f"내부 관련 글 링크 박스 자동 주입 완료 (blog: {blog_id}, lang: {language})")
+
+            # 6. Generate Clean High-Res Photo Thumbnail (Curated Preset Pool)
+            thumbnail_path = None
+            if self.config.get("publishing", {}).get("generate_thumbnail", True):
+                thumbnail_path = self.thumbnail_gen.create_thumbnail(
+                    title=title,
+                    theme_name=theme_name,
+                    blog_id=blog_id,
+                    filename_prefix=f"{blog_id}_thumb"
+                )
+
+            # 7. Publish to Tistory
+            default_status = self.config.get("publishing", {}).get("default_status", "PUBLIC")
+            is_draft = is_draft_override if is_draft_override is not None else (default_status.upper() == "DRAFT")
+
+            logger.info(f"Posting to Tistory ({'DRAFT' if is_draft else 'PUBLIC'})...")
+            post_result = self.bot.post_article(
+                subdomain=subdomain,
+                title=title,
+                content_html=content_html,
+                tags=tags,
+                thumbnail_path=thumbnail_path,
+                category_name=theme_name,
+                is_draft=is_draft
             )
 
-        # 7. Publish to Tistory
-        default_status = self.config.get("publishing", {}).get("default_status", "PUBLIC")
-        is_draft = is_draft_override if is_draft_override is not None else (default_status.upper() == "DRAFT")
+            # 8. Record into Database
+            relative_thumb = None
+            if thumbnail_path:
+                project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                try:
+                    relative_thumb = os.path.relpath(thumbnail_path, project_root).replace("\\", "/")
+                except Exception:
+                    relative_thumb = os.path.basename(thumbnail_path)
 
-        logger.info(f"Posting to Tistory ({'DRAFT' if is_draft else 'PUBLIC'})...")
-        post_result = self.bot.post_article(
-            subdomain=subdomain,
-            title=title,
-            content_html=content_html,
-            tags=tags,
-            thumbnail_path=thumbnail_path,
-            category_name=theme_name,
-            is_draft=is_draft
-        )
+            final_status = post_result.get("status", "PUBLISHED")
+            final_url = post_result.get("url")
 
-        # 8. Record into Database
-        relative_thumb = None
-        if thumbnail_path:
-            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            try:
-                relative_thumb = os.path.relpath(thumbnail_path, project_root).replace("\\", "/")
-            except Exception:
-                relative_thumb = os.path.basename(thumbnail_path)
+            post_id = self.db.record_post(
+                blog_id=blog_id,
+                theme=theme_name,
+                keyword=selected_keyword,
+                title=title,
+                summary=summary,
+                tags=tags,
+                content_html=content_html,
+                thumbnail_path=relative_thumb,
+                status=final_status,
+                post_url=final_url
+            )
 
-        final_status = post_result.get("status", "PUBLISHED")
-        final_url = post_result.get("url")
+            # Record Human-Friendly Activity Log
+            if final_status == "DAILY_LIMIT_DRAFT":
+                self.db.record_activity(
+                    level="WARNING",
+                    blog_id=blog_id,
+                    blog_name=blog_name,
+                    category=theme_name,
+                    title=title,
+                    message="티스토리 하루 최대 발행 쿼터(15개) 도달로 임시저장되었습니다. 자정(00:00)에 15개로 초기화됩니다.",
+                    url=final_url
+                )
+            elif final_status == "DRAFT_SAVED":
+                self.db.record_activity(
+                    level="INFO",
+                    blog_id=blog_id,
+                    blog_name=blog_name,
+                    category=theme_name,
+                    title=title,
+                    message="요청하신 대로 임시저장(비공개) 상태로 안전하게 보관되었습니다.",
+                    url=final_url
+                )
+            else:
+                self.db.record_activity(
+                    level="SUCCESS",
+                    blog_id=blog_id,
+                    blog_name=blog_name,
+                    category=theme_name,
+                    title=title,
+                    message=f"공개 발행 완료 (분량: {len(content_html):,}자, E-E-A-T 구조화 및 3D 썸네일 탑재)",
+                    url=final_url
+                )
 
-        post_id = self.db.record_post(
-            blog_id=blog_id,
-            theme=theme_name,
-            keyword=selected_keyword,
-            title=title,
-            summary=summary,
-            tags=tags,
-            content_html=content_html,
-            thumbnail_path=relative_thumb,
-            status=final_status,
-            post_url=final_url
-        )
+            # 9. Google Indexing API Fast Submission (if published)
+            if final_status == "PUBLISHED" and final_url:
+                indexing_mgr = GoogleIndexingManager()
+                indexing_mgr.request_indexing(final_url)
 
-        # Record Human-Friendly Activity Log
-        if final_status == "DAILY_LIMIT_DRAFT":
+            logger.info(f"Successfully completed! DB Post ID: {post_id}, URL: {final_url}")
+            return {
+                "success": True,
+                "post_id": post_id,
+                "title": title,
+                "keyword": selected_keyword,
+                "url": final_url,
+                "status": final_status
+            }
+        except Exception as e:
+            err_msg = str(e)
+            logger.error(f"❌ [{blog_name}] 포스팅 파이프라인 오류 발생: {err_msg}", exc_info=True)
+
+            if "2단계" in err_msg or "추가 사용자 확인" in err_msg or "PermissionError" in type(e).__name__ or "로그인" in err_msg:
+                level = "ERROR"
+                human_msg = "🚨 카카오 로그인 세션 만료 또는 2단계 인증 대기. 웹 대시보드 상단의 [카카오 세션 연동]에서 QR코드 또는 계정으로 로그인해주세요."
+            elif "TimeoutError" in type(e).__name__ or "timeout" in err_msg.lower():
+                level = "ERROR"
+                human_msg = f"⏳ 티스토리 에디터 응답 시간 초과 (네트워크 지연 또는 페이지 멈춤): {err_msg[:90]}"
+            elif "API" in err_msg or "GEMINI" in err_msg:
+                level = "ERROR"
+                human_msg = f"🤖 Gemini AI 원고 생성 오류: {err_msg[:90]}"
+            else:
+                level = "ERROR"
+                human_msg = f"작업 실패: {err_msg[:90]}"
+
             self.db.record_activity(
-                level="WARNING",
+                level=level,
                 blog_id=blog_id,
                 blog_name=blog_name,
-                category=theme_name,
-                title=title,
-                message="티스토리 하루 최대 발행 쿼터(15개) 도달로 임시저장되었습니다. 자정(00:00)에 15개로 초기화됩니다.",
-                url=final_url
+                category=theme_name if 'theme_name' in locals() else None,
+                title=title if 'title' in locals() else f"[{blog_name}] 자동 포스팅 실패",
+                message=human_msg,
+                url=None
             )
-        elif final_status == "DRAFT_SAVED":
-            self.db.record_activity(
-                level="INFO",
-                blog_id=blog_id,
-                blog_name=blog_name,
-                category=theme_name,
-                title=title,
-                message="요청하신 대로 임시저장(비공개) 상태로 안전하게 보관되었습니다.",
-                url=final_url
-            )
-        else:
-            self.db.record_activity(
-                level="SUCCESS",
-                blog_id=blog_id,
-                blog_name=blog_name,
-                category=theme_name,
-                title=title,
-                message=f"공개 발행 완료 (분량: {len(content_html):,}자, E-E-A-T 구조화 및 3D 썸네일 탑재)",
-                url=final_url
-            )
-
-        # 9. Google Indexing API Fast Submission (if published)
-        if final_status == "PUBLISHED" and final_url:
-            indexing_mgr = GoogleIndexingManager()
-            indexing_mgr.request_indexing(final_url)
-
-        logger.info(f"Successfully completed! DB Post ID: {post_id}, URL: {final_url}")
-        return {
-            "success": True,
-            "post_id": post_id,
-            "title": title,
-            "keyword": selected_keyword,
-            "url": final_url,
-            "status": final_status
-        }
+            return {"success": False, "error": err_msg}
 
     def ping_self(self):
         """Send a keep-alive heartbeat ping every 5 minutes to prevent Render from sleeping."""

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>로그인 - 티스토리 5채널 AI 대시보드</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="manifest" href="/manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,69 +14,97 @@
     <link rel="icon" type="image/png" href="/static/app_icon.png">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap');
-        body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            letter-spacing: -0.02em;
+        }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4 antialiased selection:bg-blue-600 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4 antialiased selection:bg-indigo-600 selection:text-white relative overflow-hidden">
 
-    <div class="w-full max-w-sm">
-        <!-- Mascot Logo & Brand Header -->
+    <!-- Ambient Glowing Background Orbs -->
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="w-full max-w-sm relative z-10">
+        
+        <!-- Brand Header & Mascot Badge -->
         <div class="text-center mb-6">
             <div class="inline-block relative mb-3">
-                <img src="/static/app_icon.png" alt="티스토리 AI 마스코트" class="w-20 h-20 rounded-2xl mx-auto shadow-2xl shadow-blue-500/20 border-2 border-slate-700/80 p-1 bg-slate-900 object-cover">
-                <span class="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-slate-950 rounded-full flex items-center justify-center text-[10px] text-white">
+                <div class="w-20 h-20 rounded-2xl mx-auto p-1 bg-gradient-to-tr from-indigo-500 via-blue-500 to-indigo-600 shadow-2xl shadow-indigo-500/30">
+                    <img src="/static/app_icon.png" alt="티스토리 AI 마스코트" class="w-full h-full rounded-[14px] object-cover bg-slate-900">
+                </div>
+                <span class="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 border-2 border-slate-950 rounded-full flex items-center justify-center text-[10px] text-white shadow-sm">
                     <i class="fa-solid fa-lock"></i>
                 </span>
             </div>
-            <h1 class="text-lg font-black text-white tracking-tight">티스토리 AI 멀티블로그</h1>
-            <p class="text-xs text-slate-400 mt-0.5">대시보드 보안 접근을 위해 로그인해 주세요</p>
+            <h1 class="text-xl font-black text-white tracking-tight">티스토리 AI 멀티블로그</h1>
+            <p class="text-xs text-slate-400 mt-1">보안 관리자 대시보드 접근 인증</p>
         </div>
 
         <!-- Login Card -->
-        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-2xl backdrop-blur-xl">
+        <div class="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-6 sm:p-7 shadow-2xl backdrop-blur-xl">
             {% if error %}
             <div class="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-400 flex items-center space-x-2 font-medium">
-                <i class="fa-solid fa-circle-exclamation text-rose-400"></i>
+                <i class="fa-solid fa-circle-exclamation text-rose-400 text-sm"></i>
                 <span>{{ error }}</span>
             </div>
             {% endif %}
 
             <form method="POST" action="/login" class="space-y-4">
                 <div>
-                    <label for="username" class="block text-xs font-bold text-slate-300 mb-1.5">사용자 이름</label>
+                    <label for="username" class="block text-xs font-bold text-slate-300 mb-1.5">관리자 아이디</label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 text-xs">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500 text-xs pointer-events-none">
                             <i class="fa-solid fa-user"></i>
                         </span>
                         <input type="text" id="username" name="username" value="admin" required autocomplete="username" autocapitalize="none" spellcheck="false"
-                               class="w-full pl-9 pr-3 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition shadow-inner font-medium">
+                               class="w-full pl-9 pr-3.5 py-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-inner font-medium">
                     </div>
                 </div>
 
                 <div>
-                    <label for="password" class="block text-xs font-bold text-slate-300 mb-1.5">비밀번호</label>
+                    <label for="password" class="block text-xs font-bold text-slate-300 mb-1.5">대시보드 비밀번호</label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 text-xs">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500 text-xs pointer-events-none">
                             <i class="fa-solid fa-key"></i>
                         </span>
-                        <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="대시보드 비밀번호"
-                               class="w-full pl-9 pr-3 py-2.5 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition shadow-inner font-medium">
+                        <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="비밀번호 입력"
+                               class="w-full pl-9 pr-9 py-2.5 bg-slate-950/70 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition shadow-inner font-medium">
+                        <button type="button" onclick="togglePasswordVisibility()" aria-label="비밀번호 보기 토글" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-slate-300 transition text-xs">
+                            <i id="passwordEyeIcon" class="fa-solid fa-eye"></i>
+                        </button>
                     </div>
                 </div>
 
-                <div class="pt-1">
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center space-x-2 shadow-lg shadow-blue-600/30 active:scale-[0.98]">
-                        <span>로그인</span>
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-extrabold py-2.5 px-4 rounded-xl text-xs transition flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/30 active:scale-[0.98] outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+                        <span>대시보드 로그인</span>
                         <i class="fa-solid fa-arrow-right text-xs"></i>
                     </button>
                 </div>
             </form>
         </div>
 
-        <p class="text-center text-[11px] text-slate-500 mt-6">
-            🔒 256-bit 종단간 암호화 보안 세션
+        <!-- Security Footer Badge -->
+        <p class="text-center text-[11px] text-slate-500 mt-6 flex items-center justify-center space-x-1.5">
+            <i class="fa-solid fa-shield-halved text-indigo-400"></i>
+            <span>종단간 암호화 보안 세션 적용 (30일 유지)</span>
         </p>
     </div>
 
+    <script>
+        function togglePasswordVisibility() {
+            const pwd = document.getElementById('password');
+            const icon = document.getElementById('passwordEyeIcon');
+            if (pwd.type === 'password') {
+                pwd.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash';
+            } else {
+                pwd.type = 'password';
+                icon.className = 'fa-solid fa-eye';
+            }
+        }
+    </script>
 </body>
 </html>

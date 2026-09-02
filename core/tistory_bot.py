@@ -114,20 +114,47 @@ class TistoryBot:
                     logger.error(f"카카오 로그인 입력 에러: {e}")
 
         # 3. Wait until redirected back to Tistory
-        if "penalty_verification" in page.url:
-            logger.error("🚨 카카오 해외 IP 본인확인/페널티 보안 인증(penalty_verification)이 감지되었습니다. 로컬에서 인증된 세션(SESSION_STORAGE_STATE)을 Render 환경변수에 등록하여 사용해주세요.")
+        curr_url = page.url
+        curr_title = ""
+        try:
+            curr_title = page.title()
+        except Exception:
+            pass
+
+        if "penalty_verification" in curr_url or "추가 사용자 확인" in curr_title:
+            logger.error("🚨 [카카오 2단계 보안 인증 감지] '추가 사용자 확인' 또는 보안 페널티가 발생하여 자동 로그인이 차단되었습니다. 로컬에서 'python scripts/generate_session_env.py'를 실행하여 세션을 갱신(SESSION_STORAGE_STATE)해주세요.")
             return False
 
         try:
-            page.wait_for_url("**/tistory.com/**", timeout=20000)
+            # Wait until URL returns to tistory.com and is NOT on any login/auth domain
+            page.wait_for_url(
+                lambda u: ("tistory.com" in u) and ("/auth/login" not in u) and ("accounts.kakao.com" not in u) and ("kauth.kakao.com" not in u),
+                timeout=20000
+            )
             logger.info("카카오 로그인 및 티스토리 복귀 완료!")
+            # Automatically persist refreshed session
+            try:
+                page.context.storage_state(path=self.storage_state_file)
+            except Exception as e:
+                logger.debug(f"세션 파일 자동 업데이트 참고: {e}")
             return True
         except Exception:
-            if "penalty_verification" in page.url:
-                logger.error("🚨 카카오 해외 IP 본인확인/페널티 보안 인증이 발생하여 자동 로그인이 차단되었습니다.")
+            curr_url = page.url
+            try:
+                curr_title = page.title()
+            except Exception:
+                pass
+
+            if "추가 사용자 확인" in curr_title or "penalty_verification" in curr_url:
+                logger.error("🚨 [카카오 2단계 보안 인증 감지] 모바일 카카오톡 '추가 사용자 확인' 인증이 필요합니다. 터미널에서 'python scripts/generate_session_env.py'를 실행하여 세션을 갱신해주세요.")
                 return False
-            logger.warning(f"로그인 후 티스토리 복귀 대기 타임아웃. 현재 URL: {page.url}")
-            return "tistory.com" in page.url
+
+            if "/auth/login" in curr_url or "accounts.kakao.com" in curr_url or "kauth.kakao.com" in curr_url:
+                logger.error(f"🚨 카카오 로그인 미완료 (현재 URL: {curr_url}, 타이틀: '{curr_title}'). 세션 갱신이 필요합니다.")
+                return False
+
+            is_valid = ("tistory.com" in curr_url) and ("/auth/login" not in curr_url) and ("accounts.kakao.com" not in curr_url)
+            return is_valid
 
     def post_article(
         self,
@@ -194,7 +221,7 @@ class TistoryBot:
             # 1. Step 1: Ensure Logged In
             if not self._ensure_logged_in(page, subdomain):
                 context.close()
-                raise PermissionError("카카오 로그인 실패. 계정 정보(.env)를 확인해주세요.")
+                raise PermissionError("카카오 로그인 세션이 만료되었거나 2단계 인증(추가 사용자 확인)이 필요합니다. 터미널에서 'python scripts/generate_session_env.py'를 실행하여 세션을 갱신해주세요.")
 
             # 2. Step 2: Navigate to New Post Editor
             editor_url = f"https://{subdomain}.tistory.com/manage/newpost/"
@@ -203,10 +230,31 @@ class TistoryBot:
             time.sleep(2.5)
 
             # Check if login redirected again
-            if "/auth/login" in page.url or "accounts.kakao.com" in page.url:
-                self._perform_kakao_login(page, target_return_url=editor_url)
-                page.goto(editor_url, wait_until="domcontentloaded", timeout=30000)
-                time.sleep(2.5)
+            curr_url = page.url
+            if "/auth/login" in curr_url or "accounts.kakao.com" in curr_url or "kauth.kakao.com" in curr_url:
+                logger.info("에디터 이동 중 로그인 필요 상태 감지. 카카오 인증 재시도...")
+                logged_in = self._perform_kakao_login(page, target_return_url=editor_url)
+                if logged_in:
+                    page.goto(editor_url, wait_until="domcontentloaded", timeout=30000)
+                    time.sleep(2.5)
+
+            # Final check before interacting with editor
+            curr_url = page.url
+            if "/auth/login" in curr_url or "accounts.kakao.com" in curr_url or "kauth.kakao.com" in curr_url:
+                os.makedirs("data", exist_ok=True)
+                page.screenshot(path="data/editor_login_failed.png")
+                context.close()
+                raise PermissionError(f"티스토리 글쓰기 에디터 진입 실패: 로그인 페이지에 머물러 있습니다 (URL: {curr_url}). 로컬에서 'python scripts/generate_session_env.py'로 세션을 갱신해주세요.")
+
+            # Auto-dismiss any potential draft restoration or notice overlay dialogs on editor page
+            try:
+                draft_cancel_btn = page.locator(".layer_post button:has-text('취소'), .dialog_box button:has-text('취소'), button:has-text('작성취소'), .btn_cancel").first
+                if draft_cancel_btn.is_visible(timeout=1500):
+                    logger.info("에디터 임시저장 복원 팝업 감지. [취소] 클릭하여 새 글 작성 상태 유지...")
+                    draft_cancel_btn.click()
+                    time.sleep(0.5)
+            except Exception:
+                pass
 
             # Wait until TinyMCE editor is fully loaded (up to 15 seconds)
             for wait_i in range(15):
@@ -224,7 +272,22 @@ class TistoryBot:
             # 3. Step 3: Input Title
             logger.info(f"제목 입력 중: {clean_title}")
             title_input = page.locator("#post-title-inp, textarea.textarea_tit, input[name='title'], textarea#title").first
-            title_input.wait_for(state="visible", timeout=20000)
+            try:
+                title_input.wait_for(state="visible", timeout=15000)
+            except Exception as e:
+                os.makedirs("data", exist_ok=True)
+                page.screenshot(path="data/title_input_timeout.png")
+                curr_url = page.url
+                curr_title = ""
+                try:
+                    curr_title = page.title()
+                except Exception:
+                    pass
+                logger.error(f"제목 입력창 탐색 실패 (URL: {curr_url}, Title: '{curr_title}'). 스크린샷: data/title_input_timeout.png")
+                if "/auth/login" in curr_url or "accounts.kakao.com" in curr_url or "kauth.kakao.com" in curr_url:
+                    raise PermissionError(f"카카오 로그인 세션 만료로 글쓰기 에디터 진입에 실패했습니다 (URL: {curr_url}). 'python scripts/generate_session_env.py'를 실행하여 세션을 갱신해주세요.") from e
+                raise TimeoutError(f"에디터 제목 입력창(#post-title-inp)을 찾을 수 없습니다 (현재 URL: {curr_url}, 타이틀: '{curr_title}').") from e
+
             title_input.click()
             title_input.fill(clean_title)
             title_input.press("Enter")

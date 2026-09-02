@@ -45,6 +45,7 @@ from starlette.responses import Response
 from core.database import DatabaseManager
 from core.scheduler import MultiBlogScheduler
 from core.trend_collector import TrendCollector
+from core.session_manager import session_manager
 
 CONFIG_PATH = os.path.join(BASE_DIR, "config", "config.yaml")
 
@@ -243,6 +244,7 @@ async def dashboard_home(request: Request):
     quality_config = scheduler_runner.config.get("publishing", {})
     daily_post_count = scheduler_runner.get_daily_post_count()
     activities = db.get_recent_activities(limit=30)
+    session_info = session_manager.get_session_info()
 
     context = {
         "request": request,
@@ -256,7 +258,8 @@ async def dashboard_home(request: Request):
         "quality_config": quality_config,
         "daily_post_count": daily_post_count,
         "activities": activities,
-        "logs": logs
+        "logs": logs,
+        "session_info": session_info
     }
 
     return templates.TemplateResponse(
@@ -268,6 +271,33 @@ async def dashboard_home(request: Request):
 @app.get("/api/activities")
 async def get_activities_api(limit: int = 30):
     return {"activities": db.get_recent_activities(limit=limit)}
+
+class DirectLoginRequest(BaseModel):
+    email: str
+    password: str
+
+class ImportSessionRequest(BaseModel):
+    session_json: str
+
+@app.get("/api/session/status")
+async def get_session_status():
+    return session_manager.get_session_info()
+
+@app.post("/api/session/qr/start")
+async def start_qr_session():
+    return await asyncio.to_thread(session_manager.start_qr_session)
+
+@app.get("/api/session/qr/check")
+async def check_qr_session(session_id: str):
+    return await asyncio.to_thread(session_manager.poll_qr_session, session_id)
+
+@app.post("/api/session/login")
+async def direct_login_api(req: DirectLoginRequest):
+    return await asyncio.to_thread(session_manager.direct_login, req.email, req.password)
+
+@app.post("/api/session/import")
+async def import_session_api(req: ImportSessionRequest):
+    return session_manager.import_session_json(req.session_json)
 
 @app.get("/guide", response_class=HTMLResponse)
 async def guide_page(request: Request):

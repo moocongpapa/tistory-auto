@@ -7,6 +7,9 @@ ENV/
 # Secrets & API Keys
 .env
 *.env
+service_account*.json
+*.pem
+*.key
 
 # Browser session data (Kakao/Tistory cookies)
 session_data/
