@@ -214,7 +214,7 @@
                                 <span>🇰🇷 국내 국문 (Domestic KO)</span>
                             </span>
                             {% endif %}
-                            <span class="text-xs text-slate-400 font-mono">1일 5회 자동 발행</span>
+                            <span class="text-xs text-slate-400 font-mono">1일 3회 자동 발행</span>
                         </div>
                         <h3 class="text-base font-extrabold text-slate-900 mb-1">{{ b.name }}</h3>
                         <a href="https://{{ b.subdomain }}.tistory.com" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 font-mono inline-flex items-center space-x-1 mb-4 font-medium">
@@ -240,7 +240,7 @@
                             <span>발행 시간:</span>
                         </span>
                         <span class="font-mono font-bold text-slate-700">
-                            {{ b.schedule_times | join(', ') if b.schedule_times else '06:30, 10:00, 13:30, 17:00, 21:00' }}
+                            {{ b.schedule_times | join(', ') if b.schedule_times else '07:00, 12:30, 18:30' }}
                         </span>
                     </div>
                 </div>
