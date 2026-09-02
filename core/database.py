@@ -48,7 +48,7 @@ class DatabaseManager:
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql://", 1)
 
-        # Handle unencoded special characters in password (e.g., @ or #)
+        # Handle unencoded or pre-encoded special characters in password (e.g., @ or #)
         if "@" in url:
             try:
                 creds_part, host_part = url.rsplit("@", 1)
@@ -56,7 +56,9 @@ class DatabaseManager:
                 if len(parts) >= 3:
                     proto_user = parts[0] + ":" + parts[1]
                     raw_pw = parts[2]
-                    encoded_pw = urllib.parse.quote(raw_pw)
+                    # First unquote to prevent double-encoding (%40 -> %2540)
+                    unquoted_pw = urllib.parse.unquote(raw_pw)
+                    encoded_pw = urllib.parse.quote(unquoted_pw, safe="")
                     url = f"{proto_user}:{encoded_pw}@{host_part}"
             except Exception:
                 pass
