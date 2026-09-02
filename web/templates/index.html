@@ -425,7 +425,7 @@
                                 {% if p.thumbnail_path %}
                                 {% set thumb_src = '/' + p.thumbnail_path if p.thumbnail_path.startswith('assets/') else '/static/thumbnails/' + p.thumbnail_path %}
                                 <div class="relative group w-14 h-9 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs mx-auto cursor-pointer" onclick="window.open('{{ thumb_src }}')">
-                                    <img src="{{ thumb_src }}" alt="썸네일 이미지" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition duration-200">
+                                    <img src="{{ thumb_src }}" alt="포스트 썸네일" width="56" height="36" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition duration-200">
                                     <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-[9px]">
                                         <i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i>
                                     </div>
@@ -608,7 +608,7 @@
                                         {% if act.category %}
                                         <span class="text-[10px] bg-white/80 border border-slate-200/80 px-1.5 py-0.2 rounded font-medium text-slate-600">{{ act.category }}</span>
                                         {% endif %}
-                                        <span class="text-[10px] text-slate-400 font-mono">{{ act.created_at }}</span>
+                                        <span class="text-[10px] text-slate-400 font-mono tabular-nums">{{ act.created_at }}</span>
                                     </div>
 
                                     <!-- Title & Description -->
@@ -648,7 +648,7 @@
                                 <div class="leading-relaxed log-entry">{{ log }}</div>
                                 {% endfor %}
                             {% else %}
-                                <div class="text-slate-500">실시간 로그를 대기 중입니다...</div>
+                                <div class="text-slate-500">실시간 로그를 대기 중입니다…</div>
                             {% endif %}
                         </div>
                     </div>
@@ -910,7 +910,7 @@
 
             btn.disabled = true;
             btn.classList.add('opacity-50', 'cursor-not-allowed');
-            btnText.innerHTML = '<i class="fa-solid fa-spinner animate-spin" aria-hidden="true"></i> AI 기획 & 포스팅 생성 중... (아래 실시간 로그 확인)';
+            btnText.innerHTML = '<i class="fa-solid fa-spinner animate-spin" aria-hidden="true"></i> AI 기획 & 포스팅 생성 중… (아래 실시간 로그 확인)';
             resultBox.classList.add('hidden');
 
             isPostingActive = true;
@@ -1222,7 +1222,7 @@
                                     <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-black ${badgeColor}">${badgeText}</span>
                                     <span class="font-extrabold text-slate-800 text-xs">${act.blog_name || act.blog_id}</span>
                                     ${categoryBadge}
-                                    <span class="text-[10px] text-slate-400 font-mono">${act.created_at}</span>
+                                    <span class="text-[10px] text-slate-400 font-mono tabular-nums">${act.created_at}</span>
                                 </div>
                                 ${titleLine}
                                 <p class="text-[11px] leading-relaxed text-slate-600">${act.message}</p>
