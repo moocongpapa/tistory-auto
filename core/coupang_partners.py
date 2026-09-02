@@ -22,10 +22,14 @@ class CoupangPartnersManager:
     def __init__(self):
         self.access_key = os.environ.get("COUPANG_ACCESS_KEY")
         self.secret_key = os.environ.get("COUPANG_SECRET_KEY")
+        self.tracking_id = os.environ.get("COUPANG_TRACKING_ID", "").strip()
+        self.custom_link = os.environ.get("COUPANG_CUSTOM_LINK", "").strip()
         self.session = requests.Session()
 
     def is_configured(self) -> bool:
-        return bool(self.access_key and self.secret_key and self.access_key != "your_coupang_access_key")
+        has_api = bool(self.access_key and self.secret_key and self.access_key != "your_coupang_access_key")
+        has_link = bool(self.tracking_id or self.custom_link)
+        return has_api or has_link
 
     def _generate_hmac(self, method: str, path: str, query: str = "") -> str:
         datetime_str = time.strftime("%y%m%dT%H%M%SZ", time.gmtime())
@@ -41,7 +45,7 @@ class CoupangPartnersManager:
         )
 
     def search_products(self, keyword: str, limit: int = 2) -> List[Dict[str, Any]]:
-        if not self.is_configured():
+        if not (self.access_key and self.secret_key):
             return []
 
         path = "/v2/providers/affiliate_open_api/apis/openapi/products/search"
@@ -68,41 +72,63 @@ class CoupangPartnersManager:
 
     def generate_product_box_html(self, keyword: str) -> str:
         """Generate responsive styled product recommendation box with Coupang disclosure."""
-        products = self.search_products(keyword, limit=2)
-        if not products:
+        if not self.is_configured():
             return ""
 
-        cards_html = ""
-        for p in products:
-            name = p.get("productName", "")
-            img = p.get("productImage", "")
-            price = f"{p.get('productPrice', 0):,}원"
-            link = p.get("productUrl", "")
+        # 1. Try real-time API product search if keys are active
+        products = self.search_products(keyword, limit=2)
+        if products:
+            cards_html = ""
+            for p in products:
+                name = p.get("productName", "")
+                img = p.get("productImage", "")
+                price = f"{p.get('productPrice', 0):,}원"
+                link = p.get("productUrl", "")
 
-            cards_html += f"""
-            <div style="flex: 1; min-width: 260px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; background: #ffffff; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-                <a href="{link}" target="_blank" rel="nofollow noopener" style="text-decoration: none; color: inherit;">
-                    <img src="{img}" alt="{name}" style="max-height: 140px; object-fit: contain; margin-bottom: 10px; border-radius: 6px;">
-                    <div style="font-size: 13px; font-weight: 600; color: #1e293b; line-height: 1.4; height: 38px; overflow: hidden; margin-bottom: 6px;">{name}</div>
-                    <div style="font-size: 15px; font-weight: 800; color: #dc2626; margin-bottom: 10px;">{price}</div>
-                    <span style="display: inline-block; background: #2563eb; color: #ffffff; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700;">최저가 확인하기 &gt;</span>
-                </a>
+                cards_html += f"""
+                <div style="flex: 1; min-width: 260px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; background: #ffffff; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                    <a href="{link}" target="_blank" rel="nofollow noopener" style="text-decoration: none; color: inherit;">
+                        <img src="{img}" alt="{name}" style="max-height: 140px; object-fit: contain; margin-bottom: 10px; border-radius: 6px;">
+                        <div style="font-size: 13px; font-weight: 600; color: #1e293b; line-height: 1.4; height: 38px; overflow: hidden; margin-bottom: 6px;">{name}</div>
+                        <div style="font-size: 15px; font-weight: 800; color: #dc2626; margin-bottom: 10px;">{price}</div>
+                        <span style="display: inline-block; background: #2563eb; color: #ffffff; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700;">최저가 확인하기 &gt;</span>
+                    </a>
+                </div>
+                """
+
+            return f"""
+            <!-- COUPANG_PARTNERS_SECTION -->
+            <div style="margin: 32px 0 20px; padding: 20px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px;">
+                <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 14px; display: flex; align-items: center;">
+                    <span style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 8px;">추천</span>
+                    '{keyword}' 관련 인기 추천 상품
+                </div>
+                <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+                    {cards_html}
+                </div>
+                <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 12px; margin-bottom: 0;">
+                    ※ 이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
+                </p>
             </div>
             """
 
-        box_html = f"""
-        <!-- COUPANG_PARTNERS_SECTION -->
-        <div style="margin: 32px 0 20px; padding: 20px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px;">
-            <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 14px; display: flex; align-items: center;">
-                <span style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 8px;">추천</span>
-                '{keyword}' 관련 인기 추천 상품
+        # 2. Fallback: Smart Banner with Custom / Tracking Link if API is not yet activated
+        dest_url = self.custom_link or f"https://www.coupang.com/np/search?q={keyword}"
+        return f"""
+        <!-- COUPANG_PARTNERS_BANNER_SECTION -->
+        <div style="margin: 32px 0 20px; padding: 18px 22px; background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%); border: 1px solid #bfdbfe; border-radius: 12px; box-shadow: 0 2px 8px rgba(37,99,235,0.06);">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="background: #2563eb; color: #ffffff; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 800;">쿠팡 특가</span>
+                    <span style="font-size: 14px; font-weight: 700; color: #1e293b;">'{keyword}' 실시간 최저가 &amp; 로켓배송 상품 모음</span>
+                </div>
+                <a href="{dest_url}" target="_blank" rel="nofollow noopener" style="background: #dc2626; color: #ffffff; padding: 8px 18px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(220,38,38,0.2);">
+                    <span>특가 확인하기</span>
+                    <span>&gt;</span>
+                </a>
             </div>
-            <div style="display: flex; gap: 14px; flex-wrap: wrap;">
-                {cards_html}
-            </div>
-            <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 12px; margin-bottom: 0;">
+            <p style="font-size: 11px; color: #94a3b8; text-align: right; margin-top: 10px; margin-bottom: 0;">
                 ※ 이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
             </p>
         </div>
         """
-        return box_html
