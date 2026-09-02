@@ -18,8 +18,10 @@ blogs:
   name: Smart Work Lab (IT&테크/AI)
   schedule_times:
   - 06:30
-  - '11:30'
-  - '17:30'
+  - '10:00'
+  - '13:30'
+  - '17:00'
+  - '21:00'
   subdomain: smartwork-lab
   themes:
   - keywords:
@@ -52,8 +54,10 @@ blogs:
   name: Money Roadmap 24 (금융&재테크)
   schedule_times:
   - 06:45
-  - '11:45'
-  - '17:45'
+  - '10:15'
+  - '13:45'
+  - '17:15'
+  - '21:15'
   subdomain: finance-roadmap-for-future
   themes:
   - keywords:
@@ -83,8 +87,10 @@ blogs:
   name: 정책 알리미 365 (정부 지원금&생활정보)
   schedule_times:
   - 07:00
-  - '12:00'
-  - '18:00'
+  - '10:30'
+  - '14:00'
+  - '17:30'
+  - '21:30'
   subdomain: policy-finder365
   themes:
   - keywords:
@@ -113,8 +119,10 @@ blogs:
   name: 웰니스 루틴 연구소 (건강&웰빙 라이프)
   schedule_times:
   - 07:15
-  - '12:15'
-  - '18:15'
+  - '10:45'
+  - '14:15'
+  - '17:45'
+  - '21:45'
   subdomain: wellness-routine
   themes:
   - keywords:
@@ -138,8 +146,10 @@ blogs:
   name: Grow Mindset (자기계발 & 커리어)
   schedule_times:
   - 07:30
-  - '12:30'
-  - '18:30'
+  - '11:00'
+  - '14:30'
+  - '18:00'
+  - '22:00'
   subdomain: billionaire1004
   themes:
   - keywords:
@@ -164,7 +174,7 @@ blogs:
     - 성공하는 사람들의 아침 습관 루틴 빌 게이츠 일론 머스크
     name: 성장 도서&마인드
 publishing:
-  daily_post_count: 3
+  daily_post_count: 5
   add_faq: true
   add_summary_card: true
   add_table: true
