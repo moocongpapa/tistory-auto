@@ -397,19 +397,17 @@
                                 <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" aria-label="전체 포스트 선택" class="w-3.5 h-3.5 text-blue-600 rounded border-slate-300 focus-visible:ring-2 focus-visible:ring-blue-500 cursor-pointer">
                             </th>
                             <th class="px-3 py-2.5 w-16 text-center">썸네일</th>
-                            <th class="px-3.5 py-2.5 w-52">블로그명</th>
-                            <th class="px-3.5 py-2.5 w-36">카테고리</th>
-                            <th class="px-3.5 py-2.5 w-56">선정 키워드</th>
+                            <th class="px-3.5 py-2.5 w-60">블로그명</th>
                             <th class="px-3.5 py-2.5">포스팅 제목</th>
-                            <th class="px-3.5 py-2.5 text-center w-24">상태</th>
-                            <th class="px-3.5 py-2.5 w-36">발행 일시</th>
+                            <th class="px-3.5 py-2.5 text-center w-36">발행 상태</th>
+                            <th class="px-3.5 py-2.5 w-36">작성 일시</th>
                             <th class="px-3.5 py-2.5 text-center w-20 whitespace-nowrap">바로가기</th>
                         </tr>
                     </thead>
                     <tbody id="postsTableBody" class="divide-y divide-slate-100">
                         {% if not posts %}
                         <tr id="emptyRow">
-                            <td colspan="9" class="px-4 py-10 text-center text-slate-400">
+                            <td colspan="7" class="px-4 py-10 text-center text-slate-400">
                                 <i class="fa-regular fa-folder-open text-3xl mb-2.5 block text-slate-300" aria-hidden="true"></i>
                                 아직 발행된 글 이력이 없습니다. 위의 즉시 포스팅 버튼을 눌러 테스트해보세요!
                             </td>
@@ -445,7 +443,7 @@
                                     {% else %}
                                     <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs">🇰🇷 KO</span>
                                     {% endif %}
-                                    <span class="font-bold text-slate-900 text-xs truncate max-w-[160px]" title="{{ p.blog_name }}">
+                                    <span class="font-bold text-slate-900 text-xs truncate max-w-[170px]" title="{{ p.blog_name }}">
                                         {{ p.blog_name }}
                                     </span>
                                 </div>
@@ -457,36 +455,27 @@
                                 {% endif %}
                             </td>
 
-                            <!-- Category / Theme Badge -->
-                            <td class="px-3.5 py-2.5">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 border border-indigo-200/80 text-indigo-700 whitespace-nowrap">
-                                    {{ p.theme }}
-                                </span>
-                            </td>
-
-                            <!-- Keyword -->
-                            <td class="px-3.5 py-2.5">
-                                <span class="bg-slate-100 border border-slate-200 text-slate-700 px-2 py-0.5 rounded-md text-[10px] font-medium truncate max-w-[200px] inline-block" title="{{ p.keyword }}">
-                                    {{ p.keyword }}
-                                </span>
-                            </td>
-
-                            <!-- Post Title -->
-                            <td class="px-3.5 py-2.5 font-semibold text-slate-800 max-w-lg">
+                            <!-- Post Title (Compact & Elegant Width) -->
+                            <td class="px-3.5 py-2.5 font-semibold text-slate-800 max-w-xs md:max-w-md">
                                 <div class="truncate hover:text-blue-600 transition text-xs" title="{{ p.title }}">
                                     {{ p.title }}
                                 </div>
                             </td>
 
-                            <!-- Status Badge -->
+                            <!-- Status Badge (Explicit Notification for 15-Post Limit Reached) -->
                             <td class="px-3.5 py-2.5 text-center whitespace-nowrap">
                                 {% if p.status == 'PUBLISHED' %}
-                                <span class="inline-flex items-center space-x-1 bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-extrabold">
+                                <span class="inline-flex items-center space-x-1 bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold shadow-2xs">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" aria-hidden="true"></span>
-                                    <span>공개발행</span>
+                                    <span>공개발행 완료</span>
+                                </span>
+                                {% elif p.status == 'DAILY_LIMIT_DRAFT' %}
+                                <span class="inline-flex items-center space-x-1 bg-rose-50 border border-rose-200 text-rose-700 px-2.5 py-0.5 rounded-full text-[10px] font-black shadow-2xs" title="티스토리 정책상 하루 15개 제한에 도달하여 임시저장되었습니다 (자정 리셋)">
+                                    <i class="fa-solid fa-circle-exclamation text-rose-600 text-[9px]"></i>
+                                    <span>한도초과 (미발행)</span>
                                 </span>
                                 {% else %}
-                                <span class="inline-flex items-center space-x-1 bg-amber-50 border border-amber-200 text-amber-700 px-2 py-0.5 rounded-full text-[9px] font-extrabold">
+                                <span class="inline-flex items-center space-x-1 bg-amber-50 border border-amber-200 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold shadow-2xs">
                                     <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                                     <span>임시저장</span>
                                 </span>
@@ -500,7 +489,7 @@
 
                             <!-- Link Button -->
                             <td class="px-3.5 py-2.5 text-center whitespace-nowrap min-w-[76px]">
-                                {% if p.post_url %}
+                                {% if p.status == 'PUBLISHED' and p.post_url and 'tistory.com/' in p.post_url %}
                                     {% if p.blog_id == 'blog_1' %}
                                         {% set btn_theme = "bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white border-blue-200 hover:border-blue-600 focus-visible:ring-blue-500" %}
                                     {% elif p.blog_id == 'blog_2' %}
@@ -518,6 +507,8 @@
                                     <span>보기</span>
                                     <i class="fa-solid fa-arrow-up-right-from-square text-[8px]" aria-hidden="true"></i>
                                 </a>
+                                {% elif p.status == 'DAILY_LIMIT_DRAFT' %}
+                                <span class="text-rose-500 text-[10px] font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-200" title="임시저장함에 보관됨">미발행</span>
                                 {% else %}
                                 <span class="text-slate-400 text-[10px]">-</span>
                                 {% endif %}
