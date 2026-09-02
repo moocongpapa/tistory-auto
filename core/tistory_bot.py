@@ -125,7 +125,7 @@ class TistoryBot:
                 except Exception as e:
                     logger.error(f"카카오 로그인 입력 에러: {e}")
 
-        # 3. Wait until redirected back to Tistory
+        # 3. Wait until redirected back to Tistory (with smartphone 2FA approval wait loop)
         curr_url = page.url
         curr_title = ""
         try:
@@ -133,40 +133,41 @@ class TistoryBot:
         except Exception:
             pass
 
-        if "penalty_verification" in curr_url or "추가 사용자 확인" in curr_title:
-            logger.error("🚨 [카카오 2단계 보안 인증 감지] '추가 사용자 확인' 또는 보안 페널티가 발생하여 자동 로그인이 차단되었습니다. 로컬에서 'python scripts/generate_session_env.py'를 실행하여 세션을 갱신(SESSION_STORAGE_STATE)해주세요.")
-            return False
+        # Check if 2FA triggered or still waiting on Kakao auth domain
+        if ("tistory.com" not in curr_url) or ("accounts.kakao.com" in curr_url) or ("추가 사용자 확인" in curr_title) or ("penalty_verification" in curr_url):
+            logger.info("🔔 [카카오 2단계 인증 대기] 스마트폰으로 카카오톡 인증 알림이 발송되었습니다. 모바일에서 [확인]을 눌러주세요! (최대 120초 동안 자동 감지 대기 중...)")
 
-        try:
-            # Wait until URL returns to tistory.com and is NOT on any login/auth domain
-            page.wait_for_url(
-                lambda u: ("tistory.com" in u) and ("/auth/login" not in u) and ("accounts.kakao.com" not in u) and ("kauth.kakao.com" not in u),
-                timeout=20000
-            )
+            start_wait = time.time()
+            wait_timeout = 120
+            while time.time() - start_wait < wait_timeout:
+                time.sleep(2.5)
+                c_url = page.url
+                if ("tistory.com" in c_url) and ("/auth/login" not in c_url) and ("accounts.kakao.com" not in c_url) and ("kauth.kakao.com" not in c_url):
+                    logger.info("🎉 [카카오 2단계 인증 성공] 사용자가 모바일에서 인증을 승인했습니다!")
+                    break
+                rem = int(wait_timeout - (time.time() - start_wait))
+                if rem % 10 == 0 or rem <= 15:
+                    logger.info(f"⏳ 스마트폰 카카오 2단계 인증 승인 대기 중... (남은 시간: {rem}초)")
+
+        curr_url = page.url
+        is_valid = ("tistory.com" in curr_url) and ("/auth/login" not in curr_url) and ("accounts.kakao.com" not in curr_url)
+
+        if is_valid:
             logger.info("카카오 로그인 및 티스토리 복귀 완료!")
-            # Automatically persist refreshed session
+            # Automatically persist refreshed session to disk and DB
             try:
                 page.context.storage_state(path=self.storage_state_file)
+                with open(self.storage_state_file, "r", encoding="utf-8") as sf:
+                    state_content = sf.read()
+                from core.database import DatabaseManager
+                DatabaseManager().set_setting("session_storage_state", state_content)
+                logger.info("💾 [영구보존] 2단계 인증 성공 세션이 클라우드 DB에 영구 저장되었습니다.")
             except Exception as e:
                 logger.debug(f"세션 파일 자동 업데이트 참고: {e}")
             return True
-        except Exception:
-            curr_url = page.url
-            try:
-                curr_title = page.title()
-            except Exception:
-                pass
-
-            if "추가 사용자 확인" in curr_title or "penalty_verification" in curr_url:
-                logger.error("🚨 [카카오 2단계 보안 인증 감지] 모바일 카카오톡 '추가 사용자 확인' 인증이 필요합니다. 터미널에서 'python scripts/generate_session_env.py'를 실행하여 세션을 갱신해주세요.")
-                return False
-
-            if "/auth/login" in curr_url or "accounts.kakao.com" in curr_url or "kauth.kakao.com" in curr_url:
-                logger.error(f"🚨 카카오 로그인 미완료 (현재 URL: {curr_url}, 타이틀: '{curr_title}'). 세션 갱신이 필요합니다.")
-                return False
-
-            is_valid = ("tistory.com" in curr_url) and ("/auth/login" not in curr_url) and ("accounts.kakao.com" not in curr_url)
-            return is_valid
+        else:
+            logger.error(f"🚨 카카오 2단계 인증 승인 시간 초과 또는 로그인 미완료 (현재 URL: {curr_url}). 스마트폰 카카오톡 알림을 확인해주세요.")
+            return False
 
     def post_article(
         self,

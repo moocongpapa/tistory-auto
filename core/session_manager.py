@@ -342,18 +342,24 @@ class SessionManager:
             except Exception:
                 pass
 
-            # Check if 2FA triggered
-            if "추가 사용자 확인" in curr_title or "penalty_verification" in curr_url:
-                context.close()
-                browser.close()
-                p.stop()
-                return {
-                    "success": False,
-                    "requires_2fa": True,
-                    "error": "카카오 모바일 2단계 보안 인증('추가 사용자 확인')이 필요합니다. [QR코드 로그인] 탭을 사용하시면 모바일 카카오톡으로 3초 만에 원클릭 승인하실 수 있습니다!"
-                }
+            # If not immediately on tistory.com, wait for user's mobile 2FA approval (up to 120 seconds)
+            if ("tistory.com" not in curr_url) or ("accounts.kakao.com" in curr_url) or ("추가 사용자 확인" in curr_title) or ("penalty_verification" in curr_url):
+                logger.info("🔔 [카카오 2단계 인증 대기] 스마트폰으로 카카오톡 인증 알림이 발송되었습니다. 폰에서 [확인]을 눌러주세요! (최대 120초 대기 중...)")
+                
+                start_wait = time.time()
+                wait_timeout = 120
+                while time.time() - start_wait < wait_timeout:
+                    time.sleep(2.5)
+                    curr_url = page.url
+                    if ("tistory.com" in curr_url) and ("/auth/login" not in curr_url) and ("accounts.kakao.com" not in curr_url) and ("kauth.kakao.com" not in curr_url):
+                        logger.info("🎉 [카카오 2단계 인증 성공] 사용자가 모바일에서 인증을 승인했습니다!")
+                        break
+                    rem = int(wait_timeout - (time.time() - start_wait))
+                    if rem % 10 == 0 or rem <= 15:
+                        logger.info(f"⏳ 스마트폰 카카오톡 인증 승인 대기 중... (남은 시간: {rem}초)")
 
             # Check if login succeeded
+            curr_url = page.url
             if ("tistory.com" in curr_url) and ("/auth/login" not in curr_url) and ("accounts.kakao.com" not in curr_url):
                 os.makedirs(SESSION_DIR, exist_ok=True)
                 context.storage_state(path=STORAGE_STATE_FILE)
@@ -374,7 +380,7 @@ class SessionManager:
                 p.stop()
                 return {
                     "success": True,
-                    "message": "카카오 계정 로그인이 성공적으로 완료되었습니다!",
+                    "message": "🎉 스마트폰 2단계 인증이 확인되어 카카오 로그인이 완벽히 완료되었습니다!",
                     "session_json": session_str
                 }
             else:
@@ -383,7 +389,7 @@ class SessionManager:
                 p.stop()
                 return {
                     "success": False,
-                    "error": f"로그인 미완료 (현재 페이지: {curr_title or curr_url}). 아이디/비밀번호를 확인하거나 QR코드 로그인을 이용해주세요."
+                    "error": f"2단계 인증 승인 시간이 초과되었거나 취소되었습니다 (현재: {curr_title or curr_url}). 스마트폰 카카오톡 알림을 확인 후 다시 시도해주세요."
                 }
         except Exception as e:
             try:

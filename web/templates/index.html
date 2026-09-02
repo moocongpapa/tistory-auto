@@ -1903,9 +1903,9 @@
             }
 
             btn.disabled = true;
-            btnText.innerText = "로그인 시도 중… (최대 10초)";
+            btnText.innerText = "로그인 및 2단계 인증 대기 중…";
             alertBox.className = "p-3 rounded-xl text-xs font-medium bg-blue-50 text-blue-800 border border-blue-200 block";
-            alertBox.innerText = "서버에서 카카오 인증을 진행하고 있습니다. 잠시만 기다려주세요…";
+            alertBox.innerHTML = `⏳ <b>카카오 로그인 진행 중</b><br>스마트폰 카카오톡으로 <b>[2단계 인증 알림]</b>이 오면 <b>[확인]</b>을 눌러주세요! 서버가 최대 2분 동안 승인을 감지하여 자동으로 완료합니다.`;
 
             try {
                 const res = await fetch('/api/session/login', {
