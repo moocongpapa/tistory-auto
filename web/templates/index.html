@@ -249,7 +249,7 @@
                                 <span id="dailyScheduleTotalLabel" class="text-[10px] text-purple-600 font-bold bg-purple-50 px-1.5 py-0.5 rounded">총 {{ (daily_post_count or 3) * blogs|length }}건/일 (5개 블로그)</span>
                             </label>
                             <select id="dailyPostCount" onchange="saveScheduleCountOption()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 focus-visible:ring-2 focus-visible:ring-purple-500 outline-none shadow-2xs">
-                                <option value="3" {% if daily_post_count == 3 or not daily_post_count %}selected{% endif %}>🚀 하루 3회 (06:30 / 11:30 / 17:30) - 표준 권장</option>
+                                <option value="3" {% if daily_post_count == 3 or not daily_post_count %}selected{% endif %}>🚀 하루 3회 (07:00 / 12:30 / 18:30) - 티스토리 한도 최적화 (기본 권장)</option>
                                 <option value="4" {% if daily_post_count == 4 %}selected{% endif %}>🔥 하루 4회 (06:30 / 11:30 / 15:30 / 20:30) - 고속 성장</option>
                                 <option value="5" {% if daily_post_count == 5 %}selected{% endif %}>⚡ 하루 5회 (06:30 / 10:00 / 13:30 / 17:00 / 21:00) - 최대 부스팅</option>
                             </select>
