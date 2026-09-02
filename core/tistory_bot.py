@@ -529,67 +529,74 @@ class TistoryBot:
             if not final_url or "/manage" in final_url or not re.search(r"tistory\.com/(\d+|entry/[^/]+)/?$", final_url):
                 try:
                     manage_posts_url = f"https://{subdomain}.tistory.com/manage/posts"
-                    if "/manage/posts" not in page.url:
-                        page.goto(manage_posts_url, wait_until="domcontentloaded", timeout=20000)
-                    time.sleep(2)
+                    logger.info(f"정확한 신규 글 URL 획득을 위해 관리자 목록 탐색 중: {manage_posts_url}")
+                    
+                    exact_post_url = None
+                    # Search for the newly created post with retry (handling server indexing delay)
+                    for attempt in range(4):
+                        if "/manage/posts" not in page.url or attempt > 0:
+                            page.goto(manage_posts_url, wait_until="domcontentloaded", timeout=20000)
+                        time.sleep(2)
 
-                    # Extract the exact newly created post ID by matching title or top item
-                    exact_post_url = page.evaluate("""(targetTitle) => {
-                        const items = document.querySelectorAll('.list_post li, .item_post');
-                        if (!items || items.length === 0) return null;
+                        exact_post_url = page.evaluate("""(targetTitle) => {
+                            const items = document.querySelectorAll('.list_post li, .item_post');
+                            if (!items || items.length === 0) return null;
 
-                        // 1. Try to find the item that matches the title
-                        for (const item of items) {
-                            const titEl = item.querySelector('.link_cont, .tit_post, strong.tit');
-                            const titText = titEl ? titEl.innerText.trim() : '';
-                            
-                            // Check if title matches
-                            if (titText && targetTitle && (titText.includes(targetTitle.substring(0, 15)) || targetTitle.includes(titText.substring(0, 15)))) {
-                                // Extract view link
-                                const viewLink = item.querySelector('a.link_post, a.link_view, a[href*="tistory.com/"]:not([href*="manage"])');
-                                if (viewLink && viewLink.href && !viewLink.href.includes('/manage/')) {
-                                    return viewLink.href;
-                                }
-                                // Extract from edit link
-                                const editLink = item.querySelector('a[href*="/manage/post/"]');
-                                if (editLink) {
-                                    const m = editLink.href.match(/\\/manage\\/post\\/(\\d+)/);
-                                    if (m) return window.location.origin + '/' + m[1];
-                                }
-                                // Extract from checkbox ID (e.g. inpCheck123)
-                                const chk = item.querySelector('input[id^="inpCheck"]');
-                                if (chk && chk.id) {
-                                    const m = chk.id.match(/inpCheck(\\d+)/);
-                                    if (m) return window.location.origin + '/' + m[1];
+                            const cleanTarget = (targetTitle || '').replace(/[^a-zA-Z0-9가-힣]/g, '').toLowerCase();
+                            const targetPrefix = cleanTarget.substring(0, 10);
+
+                            // 1. Precise Match by title text
+                            for (const item of items) {
+                                const titEl = item.querySelector('.link_cont, .tit_post, strong.tit');
+                                const titText = titEl ? titEl.innerText.trim() : '';
+                                const cleanItemTit = titText.replace(/[^a-zA-Z0-9가-힣]/g, '').toLowerCase();
+
+                                if (targetPrefix && cleanItemTit.includes(targetPrefix)) {
+                                    // Extract view link
+                                    const viewLink = item.querySelector('a.link_post, a.link_view, a[href*="tistory.com/"]:not([href*="manage"])');
+                                    if (viewLink && viewLink.href && !viewLink.href.includes('/manage/')) {
+                                        return viewLink.href;
+                                    }
+                                    // Extract from edit link
+                                    const editLink = item.querySelector('a[href*="/manage/post/"]');
+                                    if (editLink) {
+                                        const m = editLink.href.match(/\\/manage\\/post\\/(\\d+)/);
+                                        if (m) return window.location.origin + '/' + m[1];
+                                    }
+                                    // Extract from checkbox ID (inpCheck123)
+                                    const chk = item.querySelector('input[id^="inpCheck"]');
+                                    if (chk && chk.id) {
+                                        const m = chk.id.match(/inpCheck(\\d+)/);
+                                        if (m) return window.location.origin + '/' + m[1];
+                                    }
                                 }
                             }
-                        }
+                            return null;
+                        }""", clean_title)
 
-                        // 2. Fallback to first item on top of manage/posts
-                        const topItem = items[0];
-                        const viewLink = topItem.querySelector('a.link_post, a.link_view, a[href*="tistory.com/"]:not([href*="manage"])');
-                        if (viewLink && viewLink.href && !viewLink.href.includes('/manage/')) {
-                            return viewLink.href;
-                        }
-                        const editLink = topItem.querySelector('a[href*="/manage/post/"]');
-                        if (editLink) {
-                            const m = editLink.href.match(/\\/manage\\/post\\/(\\d+)/);
-                            if (m) return window.location.origin + '/' + m[1];
-                        }
-                        const chk = topItem.querySelector('input[id^="inpCheck"]');
-                        if (chk && chk.id) {
-                            const m = chk.id.match(/inpCheck(\\d+)/);
-                            if (m) return window.location.origin + '/' + m[1];
-                        }
+                        if exact_post_url and re.search(r"tistory\.com/\d+", exact_post_url):
+                            logger.info(f"🎯 방금 작성된 신규 글 제목 매칭 및 고유 URL 캡처 성공: {exact_post_url}")
+                            final_url = exact_post_url
+                            break
+                        
+                        logger.info(f"신규 포스트 목록 갱신 대기 중... (시도 {attempt+1}/4)")
+                        time.sleep(1.5)
 
-                        return null;
-                    }""", clean_title)
-
-                    if exact_post_url and re.search(r"tistory\.com/\d+", exact_post_url):
-                        final_url = exact_post_url
-                        logger.info(f"🎯 실제 공개 포스트 고유 URL 추출 성공: {final_url}")
-                    else:
-                        final_url = f"https://{subdomain}.tistory.com"
+                    if not exact_post_url:
+                        # Fallback to the top item on manage/posts
+                        top_url = page.evaluate("""() => {
+                            const topItem = document.querySelector('.list_post li, .item_post');
+                            if (!topItem) return null;
+                            const viewLink = topItem.querySelector('a.link_post, a.link_view, a[href*="tistory.com/"]:not([href*="manage"])');
+                            if (viewLink && viewLink.href && !viewLink.href.includes('/manage/')) return viewLink.href;
+                            const editLink = topItem.querySelector('a[href*="/manage/post/"]');
+                            if (editLink) {
+                                const m = editLink.href.match(/\\/manage\\/post\\/(\\d+)/);
+                                if (m) return window.location.origin + '/' + m[1];
+                            }
+                            return null;
+                        }""")
+                        final_url = top_url if (top_url and re.search(r"tistory\.com/\d+", top_url)) else f"https://{subdomain}.tistory.com"
                 except Exception as e:
                     logger.debug(f"포스트 URL 추출 참고: {e}")
                     final_url = f"https://{subdomain}.tistory.com"
