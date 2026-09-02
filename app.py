@@ -200,6 +200,7 @@ async def dashboard_home(request: Request):
 
     quality_config = scheduler_runner.config.get("publishing", {})
     daily_post_count = scheduler_runner.get_daily_post_count()
+    activities = db.get_recent_activities(limit=30)
 
     context = {
         "request": request,
@@ -212,6 +213,7 @@ async def dashboard_home(request: Request):
         "current_model": current_model,
         "quality_config": quality_config,
         "daily_post_count": daily_post_count,
+        "activities": activities,
         "logs": logs
     }
 
@@ -220,6 +222,10 @@ async def dashboard_home(request: Request):
         name="index.html",
         context=context
     )
+
+@app.get("/api/activities")
+async def get_activities_api(limit: int = 30):
+    return {"activities": db.get_recent_activities(limit=limit)}
 
 @app.get("/guide", response_class=HTMLResponse)
 async def guide_page(request: Request):

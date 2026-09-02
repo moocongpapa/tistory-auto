@@ -189,6 +189,9 @@ class MultiBlogScheduler:
             except Exception:
                 relative_thumb = os.path.basename(thumbnail_path)
 
+        final_status = post_result.get("status", "PUBLISHED")
+        final_url = post_result.get("url")
+
         post_id = self.db.record_post(
             blog_id=blog_id,
             theme=theme_name,
@@ -198,23 +201,55 @@ class MultiBlogScheduler:
             tags=tags,
             content_html=content_html,
             thumbnail_path=relative_thumb,
-            status=post_result.get("status", "PUBLISHED"),
-            post_url=post_result.get("url")
+            status=final_status,
+            post_url=final_url
         )
 
-        # 9. Google Indexing API Fast Submission (if published)
-        if post_result.get("status") == "PUBLISHED" and post_result.get("url"):
-            indexing_mgr = GoogleIndexingManager()
-            indexing_mgr.request_indexing(post_result["url"])
+        # Record Human-Friendly Activity Log
+        if final_status == "DAILY_LIMIT_DRAFT":
+            self.db.record_activity(
+                level="WARNING",
+                blog_id=blog_id,
+                blog_name=blog_name,
+                category=theme_name,
+                title=title,
+                message="티스토리 하루 최대 발행 쿼터(15개) 도달로 임시저장되었습니다. 자정(00:00)에 15개로 초기화됩니다.",
+                url=final_url
+            )
+        elif final_status == "DRAFT_SAVED":
+            self.db.record_activity(
+                level="INFO",
+                blog_id=blog_id,
+                blog_name=blog_name,
+                category=theme_name,
+                title=title,
+                message="요청하신 대로 임시저장(비공개) 상태로 안전하게 보관되었습니다.",
+                url=final_url
+            )
+        else:
+            self.db.record_activity(
+                level="SUCCESS",
+                blog_id=blog_id,
+                blog_name=blog_name,
+                category=theme_name,
+                title=title,
+                message=f"공개 발행 완료 (분량: {len(content_html):,}자, E-E-A-T 구조화 및 3D 썸네일 탑재)",
+                url=final_url
+            )
 
-        logger.info(f"Successfully completed! DB Post ID: {post_id}, URL: {post_result.get('url')}")
+        # 9. Google Indexing API Fast Submission (if published)
+        if final_status == "PUBLISHED" and final_url:
+            indexing_mgr = GoogleIndexingManager()
+            indexing_mgr.request_indexing(final_url)
+
+        logger.info(f"Successfully completed! DB Post ID: {post_id}, URL: {final_url}")
         return {
             "success": True,
             "post_id": post_id,
             "title": title,
             "keyword": selected_keyword,
-            "url": post_result.get("url"),
-            "status": post_result.get("status")
+            "url": final_url,
+            "status": final_status
         }
 
     def ping_self(self):

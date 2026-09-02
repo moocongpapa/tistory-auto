@@ -570,47 +570,102 @@
                 </p>
             </div>
 
-            <!-- Right 7 Cols: Real-time Live System Log Viewer with Auto-Scroll & Polling -->
+            <!-- Right 7 Cols: Human-Friendly Structured Activity Feed & Post Report -->
             <div class="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center space-x-2">
-                            <div class="w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
-                                <i class="fa-solid fa-terminal" aria-hidden="true"></i>
+                            <div class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-list-check" aria-hidden="true"></i>
                             </div>
-                            <h2 class="text-xs font-black text-slate-900 uppercase tracking-wide">실시간 포스팅 & 시스템 로그 (라이브 뷰어)</h2>
+                            <h2 class="text-xs font-black text-slate-900 uppercase tracking-wide">실시간 작업 활동 리포트 (성공 & 실패 상세 피드)</h2>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <!-- Live Streaming Indicator -->
-                            <span id="logLiveBadge" class="inline-flex items-center space-x-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" aria-hidden="true"></span>
-                                <span>라이브 모니터링 ON</span>
-                            </span>
-                            <!-- Manual Fetch Button -->
-                            <button onclick="fetchLatestLogs(true)" aria-label="로그 즉시 새로고침" class="p-1 hover:bg-slate-100 rounded-lg text-slate-500 transition" title="로그 새로고침">
-                                <i class="fa-solid fa-rotate text-xs" aria-hidden="true"></i>
+                            <!-- Toggle Raw Terminal Log Modal/Accordion -->
+                            <button onclick="toggleTerminalLogs()" class="flex items-center space-x-1 text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 px-2.5 py-1 rounded-lg transition" title="엔지니어용 원본 시스템 로그 보기">
+                                <i class="fa-solid fa-terminal text-[10px]"></i>
+                                <span id="btnTerminalToggleText">시스템 로그 보기</span>
                             </button>
+                            <!-- Live Indicator -->
+                            <span class="inline-flex items-center space-x-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 rounded-full text-[10px] font-extrabold">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" aria-hidden="true"></span>
+                                <span>실시간 동기화 ON</span>
+                            </span>
                         </div>
                     </div>
 
-                    <!-- Terminal Style Log Box with Auto-scroll -->
-                    <div id="liveLogBox" class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 font-mono text-[11px] text-slate-300 h-64 overflow-y-auto space-y-1 shadow-inner break-all select-text">
-                        {% if logs %}
-                            {% for log in logs %}
-                            <div class="leading-relaxed log-entry">{{ log }}</div>
+                    <!-- Clean Activity Event Stream Container -->
+                    <div id="activityStreamBox" class="space-y-2 h-72 overflow-y-auto pr-1">
+                        {% if activities %}
+                            {% for act in activities %}
+                            <div class="p-3 rounded-xl border transition text-xs flex items-start justify-between gap-2.5 {% if act.level == 'SUCCESS' %}bg-emerald-50/50 border-emerald-200/80 text-emerald-950{% elif act.level == 'WARNING' %}bg-amber-50/60 border-amber-200/80 text-amber-950{% elif act.level == 'ERROR' %}bg-rose-50/60 border-rose-200/80 text-rose-950{% else %}bg-blue-50/40 border-blue-200/70 text-blue-950{% endif %}">
+                                <div class="space-y-1 max-w-[85%]">
+                                    <div class="flex items-center space-x-2 flex-wrap gap-1">
+                                        <!-- Status Badge -->
+                                        {% if act.level == 'SUCCESS' %}
+                                        <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-black bg-emerald-600 text-white">성공</span>
+                                        {% elif act.level == 'WARNING' %}
+                                        <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-black bg-amber-500 text-white">주의/한도</span>
+                                        {% elif act.level == 'ERROR' %}
+                                        <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-black bg-rose-600 text-white">실패</span>
+                                        {% else %}
+                                        <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-black bg-blue-600 text-white">알림</span>
+                                        {% endif %}
+
+                                        <!-- Blog Name -->
+                                        <span class="font-extrabold text-slate-800 text-xs">{{ act.blog_name or act.blog_id }}</span>
+                                        {% if act.category %}
+                                        <span class="text-[10px] bg-white/80 border border-slate-200/80 px-1.5 py-0.2 rounded font-medium text-slate-600">{{ act.category }}</span>
+                                        {% endif %}
+                                        <span class="text-[10px] text-slate-400 font-mono">{{ act.created_at }}</span>
+                                    </div>
+
+                                    <!-- Title & Description -->
+                                    {% if act.title %}
+                                    <div class="font-bold text-slate-900 text-xs truncate max-w-lg">{{ act.title }}</div>
+                                    {% endif %}
+                                    <p class="text-[11px] leading-relaxed text-slate-600">{{ act.message }}</p>
+                                </div>
+
+                                <!-- Action / URL Link -->
+                                {% if act.url %}
+                                <a href="{{ act.url }}" target="_blank" class="flex-shrink-0 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-bold px-2 py-1 rounded-lg transition shadow-2xs inline-flex items-center space-x-1">
+                                    <span>보기</span>
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
+                                </a>
+                                {% endif %}
+                            </div>
                             {% endfor %}
                         {% else %}
-                            <div class="text-slate-500">실시간 로그를 대기 중입니다...</div>
+                            <!-- Fallback Initial State -->
+                            <div class="p-6 text-center text-slate-400 bg-slate-50/80 rounded-xl border border-slate-200/70">
+                                <i class="fa-regular fa-clipboard text-2xl mb-1.5 block text-slate-300"></i>
+                                자동화 파이프라인의 작업 결과 및 성공/실패 사유가 이곳에 실시간으로 깔끔하게 기록됩니다.
+                            </div>
                         {% endif %}
+                    </div>
+
+                    <!-- Hidden Collapsible Raw Terminal Logs (For Debugging) -->
+                    <div id="rawTerminalContainer" class="hidden mt-3 pt-3 border-t border-slate-100">
+                        <div class="flex items-center justify-between mb-1 text-[11px] font-bold text-slate-500">
+                            <span>💻 엔지니어용 로우 시스템 로그</span>
+                            <span id="logLastUpdated">마지막 갱신: 방금 전</span>
+                        </div>
+                        <div id="liveLogBox" class="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-[10px] text-slate-300 h-44 overflow-y-auto space-y-0.5 shadow-inner break-all select-text">
+                            {% if logs %}
+                                {% for log in logs %}
+                                <div class="leading-relaxed log-entry">{{ log }}</div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-slate-500">실시간 로그를 대기 중입니다...</div>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
 
                 <div class="flex items-center justify-between text-[11px] text-slate-400 mt-2.5 pt-2 border-t border-slate-100">
-                    <span id="logLastUpdated">마지막 갱신: 방금 전</span>
-                    <label class="flex items-center space-x-1.5 cursor-pointer">
-                        <input type="checkbox" id="autoScrollCheck" checked class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                        <span>새 로그 발생 시 자동 스크롤</span>
-                    </label>
+                    <span id="activityLastUpdated">활동 피드 실시간 감시 중</span>
+                    <span class="text-[10px] text-slate-400">💡 실패 시 정확한 사유(로그인 만료, 15개 한도, 네트워크 등)가 자동 안내됩니다.</span>
                 </div>
             </div>
         </div>
@@ -1115,11 +1170,92 @@
             }, 10000); // 10s polling interval
         }
 
+        // Toggle raw terminal system logs
+        function toggleTerminalLogs() {
+            const box = document.getElementById('rawTerminalContainer');
+            const txt = document.getElementById('btnTerminalToggleText');
+            if (!box) return;
+            if (box.classList.contains('hidden')) {
+                box.classList.remove('hidden');
+                if (txt) txt.innerText = '시스템 로그 접기';
+            } else {
+                box.classList.add('hidden');
+                if (txt) txt.innerText = '시스템 로그 보기';
+            }
+        }
+
+        // Fetch & Refresh Clean Activity Event Stream
+        async function fetchActivities() {
+            try {
+                const res = await fetch('/api/activities?limit=30');
+                const data = await res.json();
+                if (!data.activities || data.activities.length === 0) return;
+
+                const box = document.getElementById('activityStreamBox');
+                if (!box) return;
+
+                let html = '';
+                data.activities.forEach(act => {
+                    let levelColor = 'bg-blue-50/40 border-blue-200/70 text-blue-950';
+                    let badgeColor = 'bg-blue-600 text-white';
+                    let badgeText = '알림';
+
+                    if (act.level === 'SUCCESS') {
+                        levelColor = 'bg-emerald-50/50 border-emerald-200/80 text-emerald-950';
+                        badgeColor = 'bg-emerald-600 text-white';
+                        badgeText = '성공';
+                    } else if (act.level === 'WARNING') {
+                        levelColor = 'bg-amber-50/60 border-amber-200/80 text-amber-950';
+                        badgeColor = 'bg-amber-500 text-white';
+                        badgeText = '주의/한도';
+                    } else if (act.level === 'ERROR') {
+                        levelColor = 'bg-rose-50/60 border-rose-200/80 text-rose-950';
+                        badgeColor = 'bg-rose-600 text-white';
+                        badgeText = '실패';
+                    }
+
+                    const linkBtn = act.url ? `
+                        <a href="${act.url}" target="_blank" class="flex-shrink-0 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-bold px-2 py-1 rounded-lg transition shadow-2xs inline-flex items-center space-x-1">
+                            <span>보기</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
+                        </a>
+                    ` : '';
+
+                    const categoryBadge = act.category ? `<span class="text-[10px] bg-white/80 border border-slate-200/80 px-1.5 py-0.2 rounded font-medium text-slate-600">${act.category}</span>` : '';
+                    const titleLine = act.title ? `<div class="font-bold text-slate-900 text-xs truncate max-w-lg">${act.title}</div>` : '';
+
+                    html += `
+                        <div class="p-3 rounded-xl border transition text-xs flex items-start justify-between gap-2.5 ${levelColor}">
+                            <div class="space-y-1 max-w-[85%]">
+                                <div class="flex items-center space-x-2 flex-wrap gap-1">
+                                    <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-black ${badgeColor}">${badgeText}</span>
+                                    <span class="font-extrabold text-slate-800 text-xs">${act.blog_name || act.blog_id}</span>
+                                    ${categoryBadge}
+                                    <span class="text-[10px] text-slate-400 font-mono">${act.created_at}</span>
+                                </div>
+                                ${titleLine}
+                                <p class="text-[11px] leading-relaxed text-slate-600">${act.message}</p>
+                            </div>
+                            ${linkBtn}
+                        </div>
+                    `;
+                });
+
+                box.innerHTML = html;
+            } catch (e) {
+                console.debug('Activity fetch note:', e);
+            }
+        }
+
         // Initialize on Page Load
         document.addEventListener('DOMContentLoaded', () => {
             updateTableDisplay();
             fetchLatestLogs();
+            fetchActivities();
             initNotificationEngine();
+
+            // Refresh activities every 8 seconds
+            setInterval(fetchActivities, 8000);
         });
     </script>
 </body>

@@ -54,8 +54,22 @@ class DatabaseManager:
             )
             """
             )
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS activity_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                level TEXT NOT NULL,
+                blog_id TEXT,
+                blog_name TEXT,
+                category TEXT,
+                title TEXT,
+                message TEXT,
+                url TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """)
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_blog ON posts(blog_id)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_posts_keyword ON posts(keyword)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at)")
             conn.commit()
 
     def get_recent_topics(self, blog_id: str, limit: int = 30) -> List[str]:
@@ -157,10 +171,36 @@ class DatabaseManager:
             conn.commit()
             return cursor.rowcount
 
-    def delete_all_posts(self) -> int:
-        """Delete all post history."""
+    def record_activity(
+        self,
+        level: str,
+        blog_id: str = "",
+        blog_name: str = "",
+        title: str = "",
+        message: str = "",
+        url: str = "",
+        category: str = ""
+    ) -> int:
+        """Record human-friendly structured activity event."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM posts")
+            cursor.execute(
+                """
+                INSERT INTO activity_logs (level, blog_id, blog_name, category, title, message, url, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (level.upper(), blog_id, blog_name, category, title, message, url, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            )
             conn.commit()
-            return cursor.rowcount
+            return cursor.lastrowid
+
+    def get_recent_activities(self, limit: int = 40) -> List[Dict[str, Any]]:
+        """Fetch human-readable recent activity logs."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT * FROM activity_logs ORDER BY id DESC LIMIT ?",
+                (limit,)
+            )
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
