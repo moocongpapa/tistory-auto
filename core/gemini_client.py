@@ -26,11 +26,11 @@ logger = logging.getLogger(__name__)
 # Suppress Google GenAI internal AFC recommendation warnings
 logging.getLogger("google_genai.models").setLevel(logging.ERROR)
 
-# Fallback model list in order of priority (safe cascade: 3.5 -> 3.8 -> 3.7 -> 3.5-lite)
+# Fallback model list in order of priority (Best Quality First: 3.8 -> 3.7 -> 3.5 -> 3.5-lite)
 FALLBACK_TEXT_MODELS = [
-    "gemini-3.5-flash",
     "gemini-3.8-flash",
     "gemini-3.7-flash",
+    "gemini-3.5-flash",
     "gemini-3.5-flash-lite",
 ]
 
