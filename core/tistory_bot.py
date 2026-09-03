@@ -390,19 +390,62 @@ class TistoryBot:
             title_input.press("Enter")
             time.sleep(0.5)
 
-            # 4. Step 4: Attach Thumbnail First & Set as Representative
+            # 4. Step 4: Inject HTML Content via TinyMCE First
+            logger.info(f"본문 HTML 안전 주입 중 (총 {len(content_html)}자)...")
+            inject_success = page.evaluate("""(html) => {
+                if (window.tinymce && window.tinymce.activeEditor) {
+                    const ed = window.tinymce.activeEditor;
+                    ed.setContent(html, { format: 'html' });
+                    ed.undoManager?.add();
+                    ed.setDirty(true);
+                    ed.fire('change');
+                    ed.fire('input');
+                    ed.fire('SetContent');
+                    ed.save();
+                    return true;
+                }
+                const root = document.querySelector('#editor-root') || document.querySelector('.mce-content-body');
+                if (root) {
+                    root.innerHTML = html;
+                    root.dispatchEvent(new Event('input', { bubbles: true }));
+                    root.dispatchEvent(new Event('change', { bubbles: true }));
+                    return true;
+                }
+                return false;
+            }""", content_html)
+            
+            if inject_success:
+                logger.info("TinyMCE 에디터 API를 통해 본문 100% 무손실 주입 완료")
+            else:
+                logger.warning("TinyMCE 주입 실패, 대체 처리 진행")
+
+            time.sleep(0.8)
+
+            # 5. Step 5: Attach Thumbnail at Top of Content & Set as Representative
             has_thumbnail_uploaded = False
             if thumbnail_path and os.path.exists(thumbnail_path):
                 abs_thumb = os.path.abspath(thumbnail_path)
                 logger.info(f"썸네일 이미지 첨부 및 대표 설정 중: {abs_thumb}")
                 for attempt in range(3):
                     try:
-                        # Ensure editor is focused before triggering upload
+                        # Ensure editor is focused and cursor is placed at the very top
                         page.evaluate("""() => {
                             const ed = window.tinymce && window.tinymce.activeEditor;
-                            if (ed) { ed.focus(); }
+                            if (ed) {
+                                ed.focus();
+                                const body = ed.getBody();
+                                const firstNode = body ? (body.firstElementChild || body.firstChild || body) : null;
+                                if (firstNode) {
+                                    try {
+                                        ed.selection.setCursorLocation(firstNode, 0);
+                                    } catch(e) {
+                                        ed.selection.select(firstNode);
+                                        ed.selection.collapse(true);
+                                    }
+                                }
+                            }
                         }""")
-                        time.sleep(0.3)
+                        time.sleep(0.4)
 
                         with page.expect_file_chooser(timeout=10000) as fc_info:
                             page.evaluate("""() => {
@@ -416,31 +459,71 @@ class TistoryBot:
                         
                         file_chooser = fc_info.value
                         file_chooser.set_files(abs_thumb)
-                        logger.info("카카오 CDN 이미지 업로드 완료 대기 중 (6초)...")
-                        time.sleep(6.0)
+                        logger.info("카카오 CDN 이미지 업로드 및 에디터 동기화 대기 중...")
 
-                        # Verify image was inserted into TinyMCE content
-                        uploaded_check = page.evaluate("""() => {
-                            const ed = window.tinymce && window.tinymce.activeEditor;
-                            if (!ed) return false;
-                            const html = ed.getContent() || '';
-                            return html.includes('Image|') || html.includes('<figure') || html.includes('<img');
-                        }""")
-
-                        if uploaded_check:
-                            logger.info("카카오 에디터 이미지 블록 생성 확인 완료!")
-                            has_thumbnail_uploaded = True
-
-                        # Safely try clicking '대표' button if present
-                        try:
-                            page.evaluate("""() => {
-                                try {
-                                    const repBtn = document.querySelector('button.btn_represent, .btn_represent, button[aria-label*="대표"]');
-                                    if (repBtn) { repBtn.click(); }
-                                } catch(err) {}
+                        # Wait for image upload to complete cleanly (poll up to 15s)
+                        for w in range(15):
+                            time.sleep(1.0)
+                            upload_status = page.evaluate("""() => {
+                                const ed = window.tinymce && window.tinymce.activeEditor;
+                                if (!ed) return { done: false, hasImage: false };
+                                const body = ed.getBody();
+                                if (!body) return { done: false, hasImage: false };
+                                
+                                const img = body.querySelector('figure.imageblock img, figure img, img');
+                                if (!img) return { done: false, hasImage: false };
+                                
+                                const isUploading = body.querySelector('.uploading, .progress, [data-uploading="true"]') || 
+                                                    img.classList.contains('uploading') ||
+                                                    (img.src && img.src.startsWith('blob:'));
+                                
+                                const hasCdn = (img.src && (img.src.includes('kakaocdn.net') || img.src.includes('daumcdn.net')));
+                                const isLoaded = img.complete && (img.naturalWidth > 0 || hasCdn);
+                                
+                                return {
+                                    done: !isUploading && (hasCdn || isLoaded),
+                                    hasImage: true,
+                                    src: img.src || '',
+                                    width: img.naturalWidth || 0
+                                };
                             }""")
+                            if upload_status.get("done"):
+                                logger.info(f"카카오 에디터 이미지 업로드 완료 확인 ({w+1}초 소요, src: {upload_status.get('src')[:50]}...)")
+                                has_thumbnail_uploaded = True
+                                break
+
+                        # Give network/CDN a brief moment to finalize attachment registration
+                        try:
+                            page.wait_for_load_state("networkidle", timeout=3000)
                         except Exception:
                             pass
+
+                        # Explicitly select the image figure and click '대표' button
+                        time.sleep(0.5)
+                        rep_marked = page.evaluate("""() => {
+                            const ed = window.tinymce && window.tinymce.activeEditor;
+                            if (!ed) return false;
+                            const body = ed.getBody();
+                            const fig = body ? body.querySelector('figure.imageblock, figure, img') : null;
+                            if (!fig) return false;
+                            
+                            try {
+                                ed.selection.select(fig);
+                                fig.click();
+                                fig.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+                            } catch(e) {}
+                            
+                            const repBtn = document.querySelector('button.btn_represent, .btn_represent, button[aria-label*="대표"], .toolbar_image .btn_represent, [data-command="represent"]');
+                            if (repBtn) {
+                                repBtn.click();
+                                return true;
+                            }
+                            fig.setAttribute('data-ke-represented', 'true');
+                            fig.classList.add('ke-represented');
+                            return true;
+                        }""")
+                        if rep_marked:
+                            logger.info("대표 썸네일 ('대표') 지정 확인 완료")
 
                         if has_thumbnail_uploaded:
                             logger.info("썸네일 첨부 및 대표 이미지 등록 성공!")
@@ -454,42 +537,7 @@ class TistoryBot:
                         except Exception:
                             pass
 
-            # 5. Step 5: Inject HTML Content via TinyMCE (Preserving Thumbnail)
-            logger.info(f"본문 HTML 안전 주입 중 (총 {len(content_html)}자)...")
-            
-            inject_success = page.evaluate("""(html) => {
-                if (window.tinymce && window.tinymce.activeEditor) {
-                    const ed = window.tinymce.activeEditor;
-                    const currentContent = ed.getContent() || '';
-                    if (currentContent.includes('Image|') || currentContent.includes('<figure') || currentContent.includes('<img')) {
-                        ed.setContent(currentContent + '<br><br>' + html, { format: 'html' });
-                    } else {
-                        ed.setContent(html, { format: 'html' });
-                    }
-                    ed.undoManager?.add();
-                    ed.setDirty(true);
-                    ed.fire('change');
-                    ed.fire('input');
-                    ed.fire('SetContent');
-                    ed.save();
-                    return true;
-                }
-                const root = document.querySelector('#editor-root') || document.querySelector('.mce-content-body');
-                if (root) {
-                    root.innerHTML = (root.innerHTML ? root.innerHTML + '<br>' : '') + html;
-                    root.dispatchEvent(new Event('input', { bubbles: true }));
-                    root.dispatchEvent(new Event('change', { bubbles: true }));
-                    return true;
-                }
-                return false;
-            }""", content_html)
-            
-            if inject_success:
-                logger.info("TinyMCE 에디터 API를 통해 본문 100% 무손실 주입 및 저장 완료")
-            else:
-                logger.warning("TinyMCE 주입 실패, 대체 처리 진행")
-
-            time.sleep(0.8)
+            time.sleep(0.5)
 
             # 6. Step 6: Select Category (Tistory TinyMCE #category-list / .mce-menu-item Targeter)
             if category_name:

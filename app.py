@@ -146,10 +146,23 @@ app.add_middleware(DashboardAuthMiddleware)
 # Static and Templates
 THUMBNAILS_DIR = os.path.join(BASE_DIR, "generated", "thumbnails")
 ASSETS_DIR = os.path.join(BASE_DIR, "assets")
+GENERATED_DIR = os.path.join(BASE_DIR, "generated")
 os.makedirs(THUMBNAILS_DIR, exist_ok=True)
 os.makedirs(ASSETS_DIR, exist_ok=True)
 
+app.mount("/generated", StaticFiles(directory=GENERATED_DIR), name="generated")
 app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
+
+@app.get("/static/thumbnails/{filename}")
+async def get_static_thumbnail(filename: str):
+    static_p = os.path.join(BASE_DIR, "static", "thumbnails", filename)
+    if os.path.exists(static_p):
+        return FileResponse(static_p)
+    gen_p = os.path.join(THUMBNAILS_DIR, filename)
+    if os.path.exists(gen_p):
+        return FileResponse(gen_p)
+    return Response(status_code=404)
+
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "web", "templates"))

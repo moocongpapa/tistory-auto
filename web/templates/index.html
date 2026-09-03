@@ -536,13 +536,20 @@
                             <!-- Thumbnail Preview -->
                             <td class="px-3 py-2.5 text-center">
                                 {% if p.thumbnail_path %}
-                                {% set thumb_src = '/' + p.thumbnail_path if p.thumbnail_path.startswith('assets/') else '/static/thumbnails/' + p.thumbnail_path %}
+                                {% if p.thumbnail_path.startswith('http://') or p.thumbnail_path.startswith('https://') %}
+                                    {% set thumb_src = p.thumbnail_path %}
+                                {% elif p.thumbnail_path.startswith('assets/') or p.thumbnail_path.startswith('generated/') %}
+                                    {% set thumb_src = '/' + p.thumbnail_path %}
+                                {% else %}
+                                    {% set thumb_src = '/static/thumbnails/' + p.thumbnail_path %}
+                                {% endif %}
                                 <div class="relative group w-14 h-9 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 shadow-2xs mx-auto cursor-pointer" onclick="window.open('{{ thumb_src }}')">
-                                    <img src="{{ thumb_src }}" alt="썸네일" width="56" height="36" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition duration-200">
+                                    <img src="{{ thumb_src }}" alt="썸네일" width="56" height="36" loading="lazy" class="w-full h-full object-cover group-hover:scale-110 transition duration-200" onerror="this.parentElement.style.display='none'; this.parentElement.nextElementSibling.style.display='flex';">
                                     <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-[9px]">
                                         <i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i>
                                     </div>
                                 </div>
+                                <div class="w-14 h-9 rounded-lg bg-slate-100 border border-slate-200 items-center justify-center text-slate-400 text-[9px] mx-auto font-medium" style="display: none;">No Img</div>
                                 {% else %}
                                 <div class="w-14 h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 text-[9px] mx-auto font-medium">No Img</div>
                                 {% endif %}
