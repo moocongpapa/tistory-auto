@@ -121,7 +121,7 @@ class MultiBlogScheduler:
             return {"success": False, "error": "No themes"}
 
         logger.info(f"=== Starting Auto-Posting Pipeline for [{blog_name} ({subdomain})] ===")
-        self.db.record_activity(
+        act_id = self.db.record_activity(
             level="INFO",
             blog_id=blog_id,
             blog_name=blog_name,
@@ -197,6 +197,15 @@ class MultiBlogScheduler:
             content_html = article.get("content_html", "")
             tags = article.get("tags", [selected_keyword])
             image_prompt = article.get("thumbnail_image_prompt", "")
+
+            # Update activity card progress: Title generated, entering publishing stage
+            self.db.update_activity(
+                activity_id=act_id,
+                level="INFO",
+                category=theme_name,
+                title=title,
+                message=f"AI 원고 작성 완료 ({len(content_html):,}자) -> 티스토리 에디터 업로드 및 썸네일 합성 중..."
+            )
 
             # 5-1. Inject Google AdSense Ads (Top, Mid, Bottom)
             adsense_cfg = self.config.get("adsense", {})
@@ -278,22 +287,20 @@ class MultiBlogScheduler:
                 post_url=final_url
             )
 
-            # Record Human-Friendly Activity Log
+            # Update the existing Activity Log Card in-place to SUCCESS/WARNING
             if final_status == "DAILY_LIMIT_DRAFT":
-                self.db.record_activity(
+                self.db.update_activity(
+                    activity_id=act_id,
                     level="WARNING",
-                    blog_id=blog_id,
-                    blog_name=blog_name,
                     category=theme_name,
                     title=title,
                     message="티스토리 하루 최대 발행 쿼터(15개) 도달로 임시저장되었습니다. 자정(00:00)에 15개로 초기화됩니다.",
                     url=final_url
                 )
             elif final_status == "DRAFT_SAVED":
-                self.db.record_activity(
+                self.db.update_activity(
+                    activity_id=act_id,
                     level="INFO",
-                    blog_id=blog_id,
-                    blog_name=blog_name,
                     category=theme_name,
                     title=title,
                     message="요청하신 대로 임시저장(비공개) 상태로 안전하게 보관되었습니다.",
@@ -301,10 +308,9 @@ class MultiBlogScheduler:
                 )
             else:
                 hot_issue_tag = "🔥 [실시간 핫이슈 급상승] " if is_hot_issue else ""
-                self.db.record_activity(
+                self.db.update_activity(
+                    activity_id=act_id,
                     level="SUCCESS",
-                    blog_id=blog_id,
-                    blog_name=blog_name,
                     category=theme_name,
                     title=f"{hot_issue_tag}{title}",
                     message=f"{hot_issue_tag}공개 발행 완료 (분량: {len(content_html):,}자, E-E-A-T 구조화 및 3D 썸네일 탑재)",
@@ -342,15 +348,28 @@ class MultiBlogScheduler:
                 level = "ERROR"
                 human_msg = f"작업 실패: {err_msg[:90]}"
 
-            self.db.record_activity(
-                level=level,
-                blog_id=blog_id,
-                blog_name=blog_name,
-                category=theme_name if 'theme_name' in locals() else None,
-                title=title if 'title' in locals() else f"[{blog_name}] 자동 포스팅 실패",
-                message=human_msg,
-                url=None
-            )
+            # Update the existing Activity Log Card in-place to ERROR
+            fail_title = title if 'title' in locals() and title else f"[{blog_name}] 자동 포스팅 실패"
+            fail_cat = theme_name if 'theme_name' in locals() else None
+            if 'act_id' in locals() and act_id:
+                self.db.update_activity(
+                    activity_id=act_id,
+                    level=level,
+                    category=fail_cat,
+                    title=fail_title,
+                    message=human_msg,
+                    url=None
+                )
+            else:
+                self.db.record_activity(
+                    level=level,
+                    blog_id=blog_id,
+                    blog_name=blog_name,
+                    category=fail_cat,
+                    title=fail_title,
+                    message=human_msg,
+                    url=None
+                )
             return {"success": False, "error": err_msg}
 
     def ping_self(self):

@@ -425,6 +425,54 @@ class DatabaseManager:
                 except Exception:
                     pass
 
+    def update_activity(
+        self,
+        activity_id: int,
+        level: str,
+        title: Optional[str] = None,
+        message: Optional[str] = None,
+        url: Optional[str] = None,
+        category: Optional[str] = None
+    ) -> bool:
+        if not activity_id:
+            return False
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ph = "%s" if self.is_postgres else "?"
+        conn = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            updates = [f"level = {ph}", f"created_at = {ph}"]
+            params = [level.upper(), now_str]
+
+            if title is not None:
+                updates.append(f"title = {ph}")
+                params.append(title)
+            if message is not None:
+                updates.append(f"message = {ph}")
+                params.append(message)
+            if url is not None:
+                updates.append(f"url = {ph}")
+                params.append(url)
+            if category is not None:
+                updates.append(f"category = {ph}")
+                params.append(category)
+
+            params.append(activity_id)
+            set_clause = ", ".join(updates)
+            cursor.execute(f"UPDATE activity_logs SET {set_clause} WHERE id = {ph}", tuple(params))
+            conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"update_activity error: {e}")
+            return False
+        finally:
+            if conn:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+
     def get_recent_activities(self, limit: int = 40) -> List[Dict[str, Any]]:
         ph = "%s" if self.is_postgres else "?"
         conn = None

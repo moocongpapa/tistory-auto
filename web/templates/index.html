@@ -738,13 +738,25 @@
                                 <div class="space-y-1 max-w-[85%]">
                                     <div class="flex items-center space-x-2 flex-wrap gap-1">
                                         {% if act.level == 'SUCCESS' %}
-                                        <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-black bg-emerald-600 text-white">성공</span>
+                                        <span class="inline-flex items-center space-x-1 px-1.5 py-0.2 rounded text-[10px] font-black bg-emerald-600 text-white">
+                                            <i class="fa-solid fa-check text-[9px]"></i>
+                                            <span>성공</span>
+                                        </span>
                                         {% elif act.level == 'WARNING' %}
-                                        <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-black bg-amber-500 text-white">주의/한도</span>
+                                        <span class="inline-flex items-center space-x-1 px-1.5 py-0.2 rounded text-[10px] font-black bg-amber-500 text-white">
+                                            <i class="fa-solid fa-triangle-exclamation text-[9px]"></i>
+                                            <span>주의/한도</span>
+                                        </span>
                                         {% elif act.level == 'ERROR' %}
-                                        <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-black bg-rose-600 text-white">실패</span>
+                                        <span class="inline-flex items-center space-x-1 px-1.5 py-0.2 rounded text-[10px] font-black bg-rose-600 text-white">
+                                            <i class="fa-solid fa-xmark text-[9px]"></i>
+                                            <span>실패</span>
+                                        </span>
                                         {% else %}
-                                        <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-black bg-indigo-600 text-white">작업중</span>
+                                        <span class="inline-flex items-center space-x-1 px-1.5 py-0.2 rounded text-[10px] font-black bg-indigo-600 text-white animate-pulse">
+                                            <i class="fa-solid fa-spinner fa-spin text-[9px]"></i>
+                                            <span>작업중</span>
+                                        </span>
                                         {% endif %}
 
                                         <span class="font-extrabold text-slate-800 text-xs">{{ act.blog_name or act.blog_id }}</span>
@@ -1787,19 +1799,19 @@
                     if (act.level === 'SUCCESS') {
                         levelColor = 'bg-emerald-50/40 border-emerald-200 text-emerald-950';
                         badgeColor = 'bg-emerald-600 text-white';
-                        badgeText = '성공';
+                        badgeText = '<i class="fa-solid fa-check text-[9px] mr-1"></i>성공';
                     } else if (act.level === 'WARNING') {
                         levelColor = 'bg-amber-50/50 border-amber-200 text-amber-950';
                         badgeColor = 'bg-amber-500 text-white';
-                        badgeText = '주의/한도';
+                        badgeText = '<i class="fa-solid fa-triangle-exclamation text-[9px] mr-1"></i>주의/한도';
                     } else if (act.level === 'ERROR') {
                         levelColor = 'bg-rose-50/60 border-rose-200 text-rose-950';
                         badgeColor = 'bg-rose-600 text-white';
-                        badgeText = '실패';
+                        badgeText = '<i class="fa-solid fa-xmark text-[9px] mr-1"></i>실패';
                     } else if (act.level === 'INFO') {
                         levelColor = 'bg-indigo-50/40 border-indigo-200 text-indigo-950';
-                        badgeColor = 'bg-indigo-600 text-white';
-                        badgeText = '작업중';
+                        badgeColor = 'bg-indigo-600 text-white animate-pulse';
+                        badgeText = '<i class="fa-solid fa-spinner fa-spin text-[9px] mr-1"></i>작업중';
                     }
 
                     const linkBtn = act.url ? `
