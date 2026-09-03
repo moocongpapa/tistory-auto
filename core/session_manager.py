@@ -383,28 +383,38 @@ class SessionManager:
             self.manual_confirm_event.clear()
 
             page.goto("https://www.tistory.com/auth/login", wait_until="domcontentloaded", timeout=45000)
-            time.sleep(2)
+            time.sleep(1)
 
-            kakao_btn = page.locator("a.link_kakao_id, .btn_login.link_kakao_id, a:has-text('카카오계정으로 로그인')").first
-            if kakao_btn.is_visible():
+            try:
+                kakao_btn = page.locator("a.link_kakao_id, .btn_login.link_kakao_id, a:has-text('카카오계정으로 로그인')").first
+                kakao_btn.wait_for(state="visible", timeout=15000)
                 kakao_btn.click()
-                time.sleep(3)
+            except Exception as ex:
+                logger.warning(f"카카오 로그인 버튼 대기 참고: {ex}")
+
+            try:
+                page.wait_for_url(lambda u: "accounts.kakao.com" in u, timeout=15000)
+            except Exception:
+                pass
 
             if "accounts.kakao.com" not in page.url:
                 context.close()
                 browser.close()
                 p.stop()
-                return {"success": False, "error": "카카오 로그인 페이지 접근 실패"}
+                return {"success": False, "error": "카카오 로그인 페이지 접근에 실패했습니다."}
 
-            # Fill inputs
+            # Fill inputs with wait
             id_input = page.locator("input[name='loginId'], #loginId, input#loginId--1").first
             pw_input = page.locator("input[name='password'], #password, input#password--2").first
 
-            if not id_input.is_visible() or not pw_input.is_visible():
+            try:
+                id_input.wait_for(state="visible", timeout=15000)
+                pw_input.wait_for(state="visible", timeout=15000)
+            except Exception:
                 context.close()
                 browser.close()
                 p.stop()
-                return {"success": False, "error": "카카오 로그인 입력창을 찾을 수 없습니다."}
+                return {"success": False, "error": "카카오 로그인 입력창을 찾을 수 없습니다. ([📱 QR코드] 로그인을 이용해주세요)"}
 
             id_input.fill(email)
             time.sleep(0.3)
@@ -414,7 +424,46 @@ class SessionManager:
             # Submit
             submit_btn = page.locator("button[type='submit'], .btn_g.highlight.submit").first
             submit_btn.click()
-            time.sleep(5)
+            time.sleep(4)
+
+            # Check for immediate Kakao error message (e.g. 해외 로그인 차단, 비밀번호 오류, CAPTCHA)
+            page_error = page.evaluate("""() => {
+                const errSelectors = ['.desc_error', '.info_error', 'p.error', '.txt_error', '.alert_error', '.wrap_error'];
+                for (const s of errSelectors) {
+                    const el = document.querySelector(s);
+                    if (el && el.innerText && el.innerText.trim()) return el.innerText.trim();
+                }
+                const bodyText = document.body.innerText || '';
+                if (bodyText.includes('비밀번호가 일치하지 않습니다') || bodyText.includes('아이디 또는 비밀번호')) return '아이디 또는 비밀번호가 일치하지 않습니다.';
+                if (bodyText.includes('해외 로그인 차단')) return '카카오 계정에 [해외 로그인 차단]이 설정되어 있어 클라우드 로그인이 차단되었습니다.';
+                if (bodyText.includes('자동입력 방지') || bodyText.includes('보안문자')) return '카카오 보안문자(CAPTCHA) 확인이 요구되었습니다.';
+                if (bodyText.includes('보호조치')) return '카카오 계정 보호조치가 적용되었습니다.';
+                return null;
+            }""")
+            if page_error:
+                logger.warning(f"⚠️ [카카오 로그인 차단/오류 감지] {page_error}")
+                context.close()
+                browser.close()
+                p.stop()
+                return {
+                    "success": False,
+                    "error": f"{page_error} (카카오 보안 정책 우회를 위해 [📱 QR코드] 로그인을 이용해주세요!)"
+                }
+
+            # Try auto-clicking any '카카오톡으로 인증' or '인증 요청' button if Kakao requires triggering
+            try:
+                page.evaluate("""() => {
+                    const allEls = Array.from(document.querySelectorAll('button, a, input[type="button"], input[type="submit"]'));
+                    for (const el of allEls) {
+                        const txt = (el.innerText || el.value || el.textContent || '').trim();
+                        if (txt.includes('카카오톡으로 인증') || txt.includes('인증 요청') || txt.includes('인증요청') || txt.includes('기기 인증 요청')) {
+                            el.click();
+                            break;
+                        }
+                    }
+                }""")
+            except Exception:
+                pass
 
             curr_url = page.url
             curr_title = ""
@@ -430,12 +479,16 @@ class SessionManager:
                 start_wait = time.time()
                 wait_timeout = 120
                 while time.time() - start_wait < wait_timeout:
-                    # Automatically attempt to click Kakao's '인증 완료' / '확인' button on webpage
+                    # Automatically attempt to trigger or complete 2FA on webpage
                     try:
                         page.evaluate("""() => {
-                            const allEls = Array.from(document.querySelectorAll('button, a, input[type="submit"]'));
+                            const allEls = Array.from(document.querySelectorAll('button, a, input[type="submit"], input[type="button"]'));
                             for (const el of allEls) {
                                 const txt = (el.innerText || el.value || el.textContent || '').trim();
+                                if (txt.includes('카카오톡으로 인증') || txt.includes('인증 요청') || txt.includes('인증요청')) {
+                                    el.click();
+                                    break;
+                                }
                                 if (txt.includes('인증 완료') || txt.includes('인증완료') || txt === '확인' || txt === '다음') {
                                     el.click();
                                     break;
