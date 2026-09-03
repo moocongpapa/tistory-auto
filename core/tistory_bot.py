@@ -258,10 +258,13 @@ class TistoryBot:
         is_draft: bool = False
     ) -> Dict[str, Any]:
         with sync_playwright() as p:
-            browser = p.chromium.launch(
-                headless=self.headless,
-                args=["--disable-blink-features=AutomationControlled"]
-            )
+            launch_args = ["--disable-blink-features=AutomationControlled"]
+            launch_kwargs = {"headless": self.headless, "args": launch_args}
+            proxy_url = os.environ.get("KAKAO_PROXY") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
+            if proxy_url:
+                launch_kwargs["proxy"] = {"server": proxy_url}
+                logger.info(f"🌐 [프록시 경유] 설정된 프록시 서버를 통해 안전하게 접속합니다: {proxy_url.split('@')[-1]}")
+            browser = p.chromium.launch(**launch_kwargs)
             
             if os.path.exists(self.storage_state_file):
                 context = browser.new_context(

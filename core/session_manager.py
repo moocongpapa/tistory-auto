@@ -25,6 +25,22 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SESSION_DIR = os.path.join(BASE_DIR, "session_data")
 STORAGE_STATE_FILE = os.path.join(SESSION_DIR, "storage_state.json")
 
+def get_browser_launch_kwargs(headless: bool = True, extra_args: Optional[list] = None) -> Dict[str, Any]:
+    args = [
+        "--disable-blink-features=AutomationControlled",
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage"
+    ]
+    if extra_args:
+        args.extend(extra_args)
+    kwargs: Dict[str, Any] = {"headless": headless, "args": args}
+    proxy_url = os.environ.get("KAKAO_PROXY") or os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
+    if proxy_url:
+        kwargs["proxy"] = {"server": proxy_url}
+        logger.info(f"🌐 [프록시 경유] 세션 작업 프록시 적용: {proxy_url.split('@')[-1]}")
+    return kwargs
+
 def run_in_isolated_thread(func, *args, **kwargs):
     """Executes a blocking/sync Playwright function in an isolated clean OS thread without asyncio loop."""
     try:
@@ -73,15 +89,7 @@ class ActiveQRSession:
         try:
             import base64
             self.p = sync_playwright().start()
-            self.browser = self.p.chromium.launch(
-                headless=True,
-                args=[
-                    "--disable-blink-features=AutomationControlled",
-                    "--no-sandbox",
-                    "--disable-setuid-sandbox",
-                    "--disable-dev-shm-usage"
-                ]
-            )
+            self.browser = self.p.chromium.launch(**get_browser_launch_kwargs(headless=True))
             self.context = self.browser.new_context(
                 viewport={"width": 1280, "height": 850},
                 user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
@@ -358,10 +366,7 @@ class SessionManager:
         browser = None
         try:
             p = sync_playwright().start()
-            browser = p.chromium.launch(
-                headless=True,
-                args=["--disable-blink-features=AutomationControlled"]
-            )
+            browser = p.chromium.launch(**get_browser_launch_kwargs(headless=True))
             context = browser.new_context(
                 viewport={"width": 1280, "height": 850},
                 user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
@@ -707,7 +712,7 @@ class SessionManager:
         def _worker():
             try:
                 with sync_playwright() as p:
-                    browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled"])
+                    browser = p.chromium.launch(**get_browser_launch_kwargs(headless=True))
                     context = browser.new_context(
                         storage_state=STORAGE_STATE_FILE if os.path.exists(STORAGE_STATE_FILE) else None,
                         user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
