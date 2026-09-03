@@ -44,13 +44,32 @@ class MultiBlogScheduler:
         self.bot = TistoryBot(headless=headless)
         self.use_background = use_background
         self.scheduler = BackgroundScheduler(timezone="Asia/Seoul") if use_background else BlockingScheduler(timezone="Asia/Seoul")
+        self._pipeline_lock = threading.Lock()
+        self._active_blogs = set()
 
     def _load_config(self) -> Dict[str, Any]:
         with open(self.config_path, "r", encoding="utf-8") as f:
             return yaml.safe_load(f)
 
     def run_blog_pipeline(self, blog_id: str, is_draft_override: Optional[bool] = None) -> Dict[str, Any]:
-        """Full execution pipeline for a single blog: Trends -> Topic -> Article -> Thumbnail -> Post."""
+        """Full execution pipeline with concurrency guard to prevent duplicate posts."""
+        with self._pipeline_lock:
+            if blog_id in self._active_blogs:
+                logger.warning(f"⚠️ [{blog_id}] 이미 포스팅 작업이 진행 중입니다. 중복 실행을 완벽 차단합니다.")
+                return {
+                    "success": False,
+                    "error": f"이미 해당 블로그({blog_id})의 포스팅 작업이 진행 중입니다. 잠시 후 다시 시도해주세요."
+                }
+            self._active_blogs.add(blog_id)
+
+        try:
+            return self._run_blog_pipeline_impl(blog_id, is_draft_override)
+        finally:
+            with self._pipeline_lock:
+                self._active_blogs.discard(blog_id)
+
+    def _run_blog_pipeline_impl(self, blog_id: str, is_draft_override: Optional[bool] = None) -> Dict[str, Any]:
+        """Internal implementation of full execution pipeline for a single blog."""
         blogs = {b["id"]: b for b in self.config.get("blogs", [])}
         blog_cfg = blogs.get(blog_id)
         if not blog_cfg:
