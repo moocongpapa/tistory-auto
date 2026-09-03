@@ -77,6 +77,12 @@ async def lifespan(app: FastAPI):
             count = int(saved_count)
             scheduler_runner.update_daily_post_count(count)
             logger.info(f"💾 [영구복원] 일일 발행 스케줄 복원 ({count}회)")
+
+        # 4. Restore Scheduler Paused/Active State
+        saved_sched = db.get_setting("scheduler_enabled")
+        if saved_sched == "false":
+            scheduler_runner.is_paused = True
+            logger.info("💾 [영구복원] 스케줄러 일시중지(PAUSED) 상태 복원 완료")
     except Exception as e:
         logger.warning(f"영구 설정 복원 중 참고: {e}")
 
@@ -282,7 +288,8 @@ async def dashboard_home(request: Request):
         "daily_post_count": daily_post_count,
         "activities": activities,
         "logs": logs,
-        "session_info": session_info
+        "session_info": session_info,
+        "scheduler_paused": scheduler_runner.is_paused
     }
 
     return templates.TemplateResponse(
@@ -290,6 +297,25 @@ async def dashboard_home(request: Request):
         name="index.html",
         context=context
     )
+
+@app.post("/api/scheduler/toggle")
+async def toggle_scheduler_api():
+    return scheduler_runner.toggle()
+
+@app.post("/api/scheduler/pause")
+async def pause_scheduler_api():
+    return scheduler_runner.pause()
+
+@app.post("/api/scheduler/resume")
+async def resume_scheduler_api():
+    return scheduler_runner.resume()
+
+@app.get("/api/scheduler/status")
+async def get_scheduler_status_api():
+    return {
+        "is_paused": scheduler_runner.is_paused,
+        "status": "PAUSED" if scheduler_runner.is_paused else "RUNNING"
+    }
 
 @app.get("/api/activities")
 async def get_activities_api(limit: int = 30):
@@ -338,7 +364,8 @@ async def guide_page(request: Request):
         "blogs": blogs,
         "adsense": adsense_cfg,
         "current_model": current_model,
-        "scheduled_jobs": scheduled_jobs
+        "scheduled_jobs": scheduled_jobs,
+        "scheduler_paused": scheduler_runner.is_paused
     }
     return templates.TemplateResponse(
         request=request,
@@ -354,7 +381,8 @@ async def trigger_post(req: TriggerPostRequest):
         result = await asyncio.to_thread(
             scheduler_runner.run_blog_pipeline,
             blog_id=req.blog_id,
-            is_draft_override=req.is_draft
+            is_draft_override=req.is_draft,
+            is_manual=True
         )
         return result
     except Exception as e:

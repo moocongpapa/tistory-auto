@@ -5,6 +5,7 @@ Central Scheduler for Multi-Blog Automated Posting Pipeline with Live Trends
 import os
 import random
 import logging
+import threading
 import yaml
 from datetime import datetime
 from typing import Dict, Any, List, Optional
@@ -46,13 +47,49 @@ class MultiBlogScheduler:
         self.scheduler = BackgroundScheduler(timezone="Asia/Seoul") if use_background else BlockingScheduler(timezone="Asia/Seoul")
         self._pipeline_lock = threading.Lock()
         self._active_blogs = set()
+        self.is_paused = False
+
+    def pause(self) -> Dict[str, Any]:
+        """Pause automated scheduled postings without stopping keep-alive heartbeat."""
+        self.is_paused = True
+        try:
+            self.db.set_setting("scheduler_enabled", "false")
+            logger.info("⏸️ [스케줄러 일시중지] 자동 포스팅 스케줄이 중단되었습니다 (DB 저장 완료).")
+        except Exception as e:
+            logger.warning(f"스케줄러 설정 DB 저장 실패: {e}")
+        return {"success": True, "is_paused": True, "message": "스케줄러가 성공적으로 일시중지되었습니다."}
+
+    def resume(self) -> Dict[str, Any]:
+        """Resume automated scheduled postings."""
+        self.is_paused = False
+        try:
+            self.db.set_setting("scheduler_enabled", "true")
+            logger.info("▶️ [스케줄러 재개] 자동 포스팅 스케줄이 정상 시작되었습니다 (DB 저장 완료).")
+        except Exception as e:
+            logger.warning(f"스케줄러 설정 DB 저장 실패: {e}")
+        return {"success": True, "is_paused": False, "message": "스케줄러가 성공적으로 시작되었습니다."}
+
+    def toggle(self) -> Dict[str, Any]:
+        """Toggle between pause and resume."""
+        if self.is_paused:
+            return self.resume()
+        else:
+            return self.pause()
 
     def _load_config(self) -> Dict[str, Any]:
         with open(self.config_path, "r", encoding="utf-8") as f:
             return yaml.safe_load(f)
 
-    def run_blog_pipeline(self, blog_id: str, is_draft_override: Optional[bool] = None) -> Dict[str, Any]:
-        """Full execution pipeline with concurrency guard to prevent duplicate posts."""
+    def run_blog_pipeline(self, blog_id: str, is_draft_override: Optional[bool] = None, is_manual: bool = False) -> Dict[str, Any]:
+        """Full execution pipeline with concurrency guard and pause control to prevent duplicate posts."""
+        if self.is_paused and not is_manual:
+            logger.info(f"⏸️ [스케줄러 일시중지 상태] 자동 스케줄에 의한 [{blog_id}] 포스팅을 건너뜁니다.")
+            return {
+                "success": False,
+                "paused": True,
+                "message": "스케줄러가 일시중지 상태이므로 실행을 건너뜁니다."
+            }
+
         with self._pipeline_lock:
             if blog_id in self._active_blogs:
                 logger.warning(f"⚠️ [{blog_id}] 이미 포스팅 작업이 진행 중입니다. 중복 실행을 완벽 차단합니다.")

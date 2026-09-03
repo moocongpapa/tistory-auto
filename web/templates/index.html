@@ -249,25 +249,29 @@
             </div>
 
             <!-- 4. Next Scheduled Execution -->
-            <div class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs hover-card">
+            <div id="metricNextRunCard" class="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs hover-card">
                 <div class="flex items-center justify-between text-slate-500 mb-2">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-500">다음 예약 발행 시각</span>
-                    <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xs shadow-2xs">
-                        <i class="fa-solid fa-clock" aria-hidden="true"></i>
+                    <div id="metricNextRunIconBox" class="w-8 h-8 rounded-xl {% if scheduler_paused %}bg-amber-50 text-amber-600{% else %}bg-emerald-50 text-emerald-600{% endif %} flex items-center justify-center text-xs shadow-2xs">
+                        <i id="metricNextRunIcon" class="fa-solid {% if scheduler_paused %}fa-pause{% else %}fa-clock{% endif %}" aria-hidden="true"></i>
                     </div>
                 </div>
-                <div class="text-2xl font-black text-amber-600 truncate tabular-nums">
-                    {% if scheduled_jobs %}
+                <div id="metricNextRunTime" class="text-2xl font-black {% if scheduler_paused %}text-amber-600{% else %}text-emerald-600{% endif %} truncate tabular-nums">
+                    {% if scheduler_paused %}
+                        일시정지됨
+                    {% elif scheduled_jobs %}
                         {{ scheduled_jobs[0].next_run.split(' ')[1] if ' ' in scheduled_jobs[0].next_run else scheduled_jobs[0].next_run }}
                     {% else %}
                         예약 없음
                     {% endif %}
                 </div>
                 <div class="mt-3 flex items-center justify-between text-[11px] text-slate-500 truncate">
-                    <span class="font-bold text-slate-700 truncate max-w-[160px]" title="{{ scheduled_jobs[0].name if scheduled_jobs else '' }}">
-                        {{ scheduled_jobs[0].name if scheduled_jobs else '대기 상태' }}
+                    <span id="metricNextRunName" class="font-bold text-slate-700 truncate max-w-[160px]" title="{{ scheduled_jobs[0].name if scheduled_jobs else '' }}">
+                        {% if scheduler_paused %}자동 포스팅 중단됨{% elif scheduled_jobs %}{{ scheduled_jobs[0].name }}{% else %}대기 상태{% endif %}
                     </span>
-                    <span class="text-amber-600 font-semibold">순차 발행</span>
+                    <span id="metricNextRunStatus" class="{% if scheduler_paused %}text-amber-600 font-bold{% else %}text-emerald-600 font-semibold{% endif %}">
+                        {% if scheduler_paused %}일시정지{% else %}순차 발행{% endif %}
+                    </span>
                 </div>
             </div>
 
@@ -633,13 +637,27 @@
             <!-- Left 5 Cols: Schedule Timetable -->
             <div class="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 transition">
                 <div>
-                    <div class="flex items-center space-x-2 mb-3.5">
-                        <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs shadow-2xs">
-                            <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3.5">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs shadow-2xs">
+                                <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xs font-black text-slate-900 uppercase tracking-wide">5개 블로그 자동 포스팅 스케줄</h2>
+                                <p class="text-[10px] text-slate-400">채널별 15분 시차 자동 발행</p>
+                            </div>
                         </div>
-                        <div>
-                            <h2 class="text-xs font-black text-slate-900 uppercase tracking-wide">5개 블로그 자동 포스팅 스케줄 시간표</h2>
-                            <p class="text-[10px] text-slate-400">채널별 15분 시차 자동 발행</p>
+
+                        <!-- Scheduler Pause / Resume Toggle Controls -->
+                        <div class="flex items-center space-x-1.5 sm:space-x-2">
+                            <span id="schedulerStatusBadge" class="{% if scheduler_paused %}bg-amber-50 text-amber-800 border-amber-300/80{% else %}bg-emerald-50 text-emerald-800 border-emerald-300/80{% endif %} text-[11px] font-black px-2.5 py-1 rounded-xl border flex items-center space-x-1.5 shadow-2xs">
+                                <span id="schedulerStatusDot" class="w-2 h-2 rounded-full {% if scheduler_paused %}bg-amber-500{% else %}bg-emerald-500 animate-pulse{% endif %}"></span>
+                                <span id="schedulerStatusText">{% if scheduler_paused %}스케줄 일시정지됨{% else %}스케줄 자동 가동 중{% endif %}</span>
+                            </span>
+                            <button type="button" id="schedulerToggleBtn" onclick="toggleScheduler()" class="{% if scheduler_paused %}bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 shadow-emerald-600/20{% else %}bg-white hover:bg-rose-50 text-rose-700 border-rose-200 shadow-2xs{% endif %} px-3 py-1 rounded-xl text-xs font-bold border transition flex items-center space-x-1.5 cursor-pointer outline-none">
+                                <i id="schedulerToggleIcon" class="fa-solid {% if scheduler_paused %}fa-play{% else %}fa-pause{% endif %} text-xs"></i>
+                                <span id="schedulerToggleBtnText">{% if scheduler_paused %}스케줄 재개 (시작){% else %}스케줄 중단 (일시정지){% endif %}</span>
+                            </button>
                         </div>
                     </div>
 
@@ -658,9 +676,11 @@
                     </div>
                 </div>
 
-                <div class="text-[11px] text-slate-400 mt-3 pt-2.5 border-t border-slate-100 flex items-center space-x-1.5">
-                    <i class="fa-regular fa-clock text-indigo-500"></i>
-                    <span>매일 지정된 시간에 5개 블로그가 15분 간격으로 순차 자동 발행됩니다.</span>
+                <div class="text-[11px] text-slate-400 mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                    <div class="flex items-center space-x-1.5">
+                        <i class="fa-regular fa-clock text-indigo-500"></i>
+                        <span id="schedulerNoticeText">{% if scheduler_paused %}현재 스케줄이 중단되어 예약 시간에 글이 자동 발행되지 않습니다.{% else %}매일 지정된 시간에 5개 블로그가 15분 간격으로 순차 자동 발행됩니다.{% endif %}</span>
+                    </div>
                 </div>
             </div>
 
@@ -1226,6 +1246,86 @@
                 }
             } catch (err) {
                 console.error('Schedule count error:', err);
+            }
+        }
+
+        // Toggle Scheduler Start / Pause
+        let isSchedulerPaused = {% if scheduler_paused %}true{% else %}false{% endif %};
+
+        async function toggleScheduler() {
+            const btn = document.getElementById('schedulerToggleBtn');
+            const icon = document.getElementById('schedulerToggleIcon');
+            const btnText = document.getElementById('schedulerToggleBtnText');
+            const statusBadge = document.getElementById('schedulerStatusBadge');
+            const statusDot = document.getElementById('schedulerStatusDot');
+            const statusText = document.getElementById('schedulerStatusText');
+            const noticeText = document.getElementById('schedulerNoticeText');
+            const metricRunTime = document.getElementById('metricNextRunTime');
+            const metricRunName = document.getElementById('metricNextRunName');
+            const metricRunStatus = document.getElementById('metricNextRunStatus');
+            const metricIconBox = document.getElementById('metricNextRunIconBox');
+            const metricIcon = document.getElementById('metricNextRunIcon');
+
+            if (btn) btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/scheduler/toggle', { method: 'POST' });
+                const data = await res.json();
+
+                if (data.success) {
+                    isSchedulerPaused = data.is_paused;
+                    
+                    if (isSchedulerPaused) {
+                        // Paused State
+                        if (statusBadge) statusBadge.className = "bg-amber-50 text-amber-800 border-amber-300/80 text-[11px] font-black px-2.5 py-1 rounded-xl border flex items-center space-x-1.5 shadow-2xs";
+                        if (statusDot) statusDot.className = "w-2 h-2 rounded-full bg-amber-500";
+                        if (statusText) statusText.innerText = "스케줄 일시정지됨";
+
+                        if (btn) btn.className = "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 shadow-emerald-600/20 px-3 py-1 rounded-xl text-xs font-bold border transition flex items-center space-x-1.5 cursor-pointer outline-none";
+                        if (icon) icon.className = "fa-solid fa-play text-xs";
+                        if (btnText) btnText.innerText = "스케줄 재개 (시작)";
+
+                        if (noticeText) noticeText.innerText = "현재 스케줄이 중단되어 예약 시간에 글이 자동 발행되지 않습니다.";
+
+                        if (metricRunTime) {
+                            metricRunTime.innerText = "일시정지됨";
+                            metricRunTime.className = "text-2xl font-black text-amber-600 truncate tabular-nums";
+                        }
+                        if (metricRunName) metricRunName.innerText = "자동 포스팅 중단됨";
+                        if (metricRunStatus) {
+                            metricRunStatus.innerText = "일시정지";
+                            metricRunStatus.className = "text-amber-600 font-bold";
+                        }
+                        if (metricIconBox) metricIconBox.className = "w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xs shadow-2xs";
+                        if (metricIcon) metricIcon.className = "fa-solid fa-pause";
+                    } else {
+                        // Running State
+                        if (statusBadge) statusBadge.className = "bg-emerald-50 text-emerald-800 border-emerald-300/80 text-[11px] font-black px-2.5 py-1 rounded-xl border flex items-center space-x-1.5 shadow-2xs";
+                        if (statusDot) statusDot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+                        if (statusText) statusText.innerText = "스케줄 자동 가동 중";
+
+                        if (btn) btn.className = "bg-white hover:bg-rose-50 text-rose-700 border-rose-200 shadow-2xs px-3 py-1 rounded-xl text-xs font-bold border transition flex items-center space-x-1.5 cursor-pointer outline-none";
+                        if (icon) icon.className = "fa-solid fa-pause text-xs";
+                        if (btnText) btnText.innerText = "스케줄 중단 (일시정지)";
+
+                        if (noticeText) noticeText.innerText = "매일 지정된 시간에 5개 블로그가 15분 간격으로 순차 자동 발행됩니다.";
+
+                        if (metricRunStatus) {
+                            metricRunStatus.innerText = "순차 발행";
+                            metricRunStatus.className = "text-emerald-600 font-semibold";
+                        }
+                        if (metricIconBox) metricIconBox.className = "w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs shadow-2xs";
+                        if (metricIcon) metricIcon.className = "fa-solid fa-clock";
+
+                        setTimeout(() => location.reload(), 1200);
+                    }
+                } else {
+                    alert('스케줄 설정 변경 실패: ' + (data.error || '오류 발생'));
+                }
+            } catch (e) {
+                alert('네트워크 오류: ' + e.message);
+            } finally {
+                if (btn) btn.disabled = false;
             }
         }
 
