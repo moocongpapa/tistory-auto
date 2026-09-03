@@ -1313,7 +1313,15 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ blog_id: blogId, is_draft: isDraft })
                 });
-                const data = await response.json();
+                
+                let data;
+                try {
+                    const respText = await response.text();
+                    data = respText ? JSON.parse(respText) : { success: false, error: '서버 응답 시간 초과 (로그 창을 확인해주세요)' };
+                } catch (parseErr) {
+                    data = { success: false, error: `서버 응답 파싱 오류 (HTTP ${response.status})` };
+                }
+                
                 resultBox.classList.remove('hidden');
 
                 if (data.success) {
