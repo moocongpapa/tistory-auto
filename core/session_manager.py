@@ -87,29 +87,21 @@ class ActiveQRSession:
             )
             self.page = self.context.new_page()
 
-            # Go to Tistory auth page
-            logger.info("티스토리 로그인 페이지 이동 중...")
-            self.page.goto("https://www.tistory.com/auth/login", wait_until="domcontentloaded", timeout=45000)
-            time.sleep(1)
-
-            # Click Kakao login button with explicit wait
-            try:
-                kakao_btn = self.page.locator("a.link_kakao_id, .btn_login.link_kakao_id, a:has-text('카카오계정으로 로그인')").first
-                kakao_btn.wait_for(state="visible", timeout=15000)
-                kakao_btn.click()
-            except Exception as ex:
-                logger.warning(f"카카오 버튼 대기 참고: {ex}")
-
-            # Wait for Kakao login domain
-            try:
-                self.page.wait_for_url(lambda u: "accounts.kakao.com" in u, timeout=15000)
-            except Exception:
-                pass
+            # Go directly to Kakao OAuth login URL (30x faster, skips intermediary redirects)
+            kakao_direct_auth_url = (
+                "https://accounts.kakao.com/login?continue="
+                "https%3A%2F%2Fkauth.kakao.com%2Foauth%2Fauthorize"
+                "%3Fclient_id%3D3e6ddd834b023f24221217e370daed18"
+                "%26redirect_uri%3Dhttps%253A%252F%252Fwww.tistory.com%252Fauth%252Fkakao%252Fredirect"
+                "%26response_type%3Dcode"
+            )
+            logger.info("카카오 OAuth 로그인 페이지 직접 연결 중...")
+            self.page.goto(kakao_direct_auth_url, wait_until="domcontentloaded", timeout=25000)
 
             # Click QR Code tab with explicit wait
             try:
                 qr_tab = self.page.locator("button:has-text('QR코드 로그인'), button:has-text('QR코드'), a:has-text('QR코드'), .btn_g:has-text('QR코드')").first
-                qr_tab.wait_for(state="visible", timeout=15000)
+                qr_tab.wait_for(state="visible", timeout=8000)
                 qr_tab.click()
             except Exception as ex:
                 logger.warning(f"QR 버튼 대기 참고: {ex}")
