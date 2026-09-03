@@ -151,15 +151,21 @@ class MultiBlogScheduler:
             language = blog_cfg.get("language", "ko")
             logger.info(f"블로그 언어 설정: [{language.upper()}] | 선택된 테마: [{theme_name}]")
 
-            # 2. Fetch live real-time trend keywords
-            trend_keywords = self.trend_collector.get_trend_keywords_list(limit=8)
+            # 2. Fetch live real-time trend keywords (KR or US based on language)
+            trend_geo = "US" if language == "en" else "KR"
+            trend_keywords = self.trend_collector.get_trend_keywords_list(limit=12, geo=trend_geo)
+
+            # 2-1. Determine Hot Issue Burst Mode (~40% chance to blend viral breaking queries)
+            is_hot_issue = random.random() < 0.40
+            if is_hot_issue:
+                logger.info(f"🔥 [{blog_name}] 금일 핫이슈 급상승 모드 가동! (실시간 인기 검색어 융합)")
 
             # 3. Get recent topics to prevent duplicates (Strict 30-post history check)
             previous_topics = self.db.get_recent_topics(blog_id=blog_id, limit=30)
             logger.info(f"기존 작성된 최근 {len(previous_topics)}개 글 내역과 중복 배제 필터링 적용 중...")
 
             # 4. Discover fresh topic with Gemini (combining trends + static keywords)
-            logger.info(f"Discovering fresh topic for theme: {theme_name} ({language})...")
+            logger.info(f"Discovering fresh topic for theme: {theme_name} ({language}) | Hot Issue: {is_hot_issue}...")
             model_name = self.config.get("ai", {}).get("text_model", "gemini-3.5-flash")
             topic_info = self.gemini.discover_topic(
                 blog_name=blog_name,
@@ -168,11 +174,12 @@ class MultiBlogScheduler:
                 previous_topics=previous_topics,
                 trend_keywords=trend_keywords,
                 model=model_name,
-                language=language
+                language=language,
+                is_hot_issue=is_hot_issue
             )
             selected_keyword = topic_info.get("keyword", "핵심 주제")
             selected_topic = topic_info.get("topic", f"{theme_name} 포스팅")
-            logger.info(f"Selected Keyword (중복 배제 완료): {selected_keyword} | Topic: {selected_topic}")
+            logger.info(f"Selected Keyword (중복 배제 완료): {selected_keyword} | Topic: {selected_topic} (핫이슈: {is_hot_issue})")
 
             # 5. Generate SEO Article
             logger.info(f"Generating SEO-optimized HTML article with Gemini ({language})...")
@@ -293,13 +300,14 @@ class MultiBlogScheduler:
                     url=final_url
                 )
             else:
+                hot_issue_tag = "🔥 [실시간 핫이슈 급상승] " if is_hot_issue else ""
                 self.db.record_activity(
                     level="SUCCESS",
                     blog_id=blog_id,
                     blog_name=blog_name,
                     category=theme_name,
-                    title=title,
-                    message=f"공개 발행 완료 (분량: {len(content_html):,}자, E-E-A-T 구조화 및 3D 썸네일 탑재)",
+                    title=f"{hot_issue_tag}{title}",
+                    message=f"{hot_issue_tag}공개 발행 완료 (분량: {len(content_html):,}자, E-E-A-T 구조화 및 3D 썸네일 탑재)",
                     url=final_url
                 )
 

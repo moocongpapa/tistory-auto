@@ -15,8 +15,10 @@ load_dotenv()
 
 from config.prompts import (
     TOPIC_DISCOVERY_PROMPT,
+    TOPIC_DISCOVERY_HOT_ISSUE_PROMPT,
     ARTICLE_GENERATION_PROMPT,
     TOPIC_DISCOVERY_PROMPT_EN,
+    TOPIC_DISCOVERY_HOT_ISSUE_PROMPT_EN,
     ARTICLE_GENERATION_PROMPT_EN,
 )
 
@@ -162,7 +164,8 @@ class GeminiClient:
         previous_topics: List[str],
         trend_keywords: Optional[List[str]] = None,
         model: str = "gemini-3.5-flash",
-        language: str = "ko"
+        language: str = "ko",
+        is_hot_issue: bool = False
     ) -> Dict[str, Any]:
         """Select a fresh, high-CTR long-tail topic combining static and real-time trends."""
         self._ensure_client()
@@ -194,7 +197,12 @@ class GeminiClient:
         trends_str = ", ".join(safe_trends) if safe_trends else ("(No real-time trends available)" if language == "en" else "(실시간 트렌드 정보 없음)")
         keywords_str = ", ".join(safe_keywords)
 
-        template = TOPIC_DISCOVERY_PROMPT_EN if language == "en" else TOPIC_DISCOVERY_PROMPT
+        if is_hot_issue:
+            template = TOPIC_DISCOVERY_HOT_ISSUE_PROMPT_EN if language == "en" else TOPIC_DISCOVERY_HOT_ISSUE_PROMPT
+            logger.info("🔥 [실시간 핫이슈 급상승 모드] 가동: 인기 검색어 최우선 융합 기획 시작!")
+        else:
+            template = TOPIC_DISCOVERY_PROMPT_EN if language == "en" else TOPIC_DISCOVERY_PROMPT
+
         prompt = template.format(
             blog_name=blog_name,
             theme_name=theme_name,
@@ -204,8 +212,10 @@ class GeminiClient:
         )
 
         try:
-            raw_text = self._call_with_fallback(prompt, initial_model=model, temperature=0.8)
-            return self._extract_and_parse_json(raw_text)
+            raw_text = self._call_with_fallback(prompt, initial_model=model, temperature=0.85 if is_hot_issue else 0.8)
+            result = self._extract_and_parse_json(raw_text)
+            result["is_hot_issue"] = is_hot_issue
+            return result
         except Exception as e:
             logger.error(f"주제 발굴 중 오류 발생, 기본 대체 주제 생성: {e}")
             import random
@@ -213,7 +223,8 @@ class GeminiClient:
             return {
                 "keyword": selected_kw,
                 "topic": f"Comprehensive walkthrough and best practices for {selected_kw}" if language == "en" else f"{theme_name} 관련 {selected_kw} 상세 활용 및 꿀팁",
-                "title_candidate": f"{selected_kw}: Complete Guide & Actionable Strategies" if language == "en" else f"{selected_kw} 완벽 가이드: 꼭 알아야 할 핵심 혜택과 꿀팁"
+                "title_candidate": f"{selected_kw}: Complete Guide & Actionable Strategies" if language == "en" else f"{selected_kw} 완벽 가이드: 꼭 알아야 할 핵심 혜택과 꿀팁",
+                "is_hot_issue": is_hot_issue
             }
 
     def generate_article(

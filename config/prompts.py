@@ -45,6 +45,34 @@ TOPIC_DISCOVERY_PROMPT = """
 }}
 """
 
+TOPIC_DISCOVERY_HOT_ISSUE_PROMPT = """
+당신은 대한민국 실시간 트렌드 및 바이럴 트래픽을 선점하는 상위 0.1% 특종/이슈 전문 블로그 에디터입니다.
+현재 대한민국에서 가장 뜨거운 [실시간 급상승 검색어/인기 키워드] 중 하나를 포착하여, 우리 블로그의 테마와 융합한 "초고화력 핫이슈 포스팅"을 긴급 기획하세요.
+
+[블로그 정보]
+- 블로그명: {blog_name}
+- 메인 테마: {theme_name}
+- 기본 시드 참고 키워드: {keywords}
+
+[🔥 현재 대한민국 실시간 급상승 인기 검색어 & 핫이슈]
+{trend_keywords}
+
+[최근 발행된 글 목록 (🚫 중복 주제 금지)]
+{previous_topics}
+
+[🚨 핫이슈 급상승 기획 미션]:
+1. **실시간 검색어 우선 결합**: 위 [실시간 급상승 인기 검색어] 중에서 우리 블로그 테마({theme_name})의 독자들이 가장 관심 있어 할 만한 **핵심 이슈/속보/이벤트/트렌드 1개를 최우선 선택**하세요.
+2. **테마 관점의 재해석**: 단순 가십이나 뉴스 복붙이 아니라, 우리 블로그 성격에 맞게 독자에게 필요한 '실질적 혜택, 실무 영향, 신청 방법, 대처 전략, 핵심 팩트 정리'로 유익하게 전환하세요.
+3. **폭발적 클릭률(CTR) 제목**: 지금 당장 검색하는 대중들의 눈길을 사로잡을 긴급성/명확성/호기심이 결합된 화제성 제목을 작성하세요.
+
+[반환 형식 - 반드시 순수 JSON 포맷으로만 응답]:
+{{
+  "keyword": "선정된 실시간 핫이슈 메인 키워드",
+  "topic": "핫이슈 팩트 요약 및 블로그 독자를 위한 실질적 분석 방향",
+  "title_candidate": "호기심과 검색 유입을 극대화하는 핫이슈 포스팅 제목"
+}}
+"""
+
 ARTICLE_GENERATION_PROMPT = """
 당신은 대한민국 상위 0.1% 전문 블로거이자 SEO(검색엔진 최적화) 및 고품질 콘텐츠 큐레이터입니다.
 구글 E-E-A-T(경험, 전문성, 권위성, 신뢰성) 기준에 완벽히 부합하며, 독자가 끝까지 완독하게 만드는 매력적인 구조로 글을 작성하세요.
@@ -157,6 +185,34 @@ You are a world-class Global SEO Content Strategist and Google Search Traffic Sp
   "keyword": "Selected main long-tail search keyword (e.g. Best Free AI Tools for Remote Work Productivity 2026)",
   "topic": "Specific content roadmap, target audience persona, and core problem to solve",
   "title_candidate": "High-CTR engaging blog post title"
+}}
+"""
+
+TOPIC_DISCOVERY_HOT_ISSUE_PROMPT_EN = """
+You are a viral trend-jacking tech & lifestyle editor specialized in capturing breakout search traffic.
+Identify ONE high-velocity trending news/topic from the live trends list below and synthesize it with our blog theme into an explosive, high-CTR article.
+
+[Blog Information]
+- Blog Name: {blog_name}
+- Theme: {theme_name}
+- Base Seed Keywords: {keywords}
+
+[🔥 Live Global Trending Topics & Breaking Keywords]
+{trend_keywords}
+
+[Recent Published Articles (STRICT NON-DUPLICATION)]:
+{previous_topics}
+
+[🚨 Breaking Hot Issue Mission]:
+1. **Trend-First Selection**: Pick ONE breakout trend or event from [Live Global Trending Topics] that has high relevance or surprising crossover with our theme ({theme_name}).
+2. **Actionable Thematic Angle**: Do NOT write generic news. Reframe it into actionable insights, practical takeaways, breakdown of what it means for the reader, and step-by-step guidance.
+3. **High-CTR Viral Title**: Craft a timely, compelling title packed with urgency, intrigue, and high search intent.
+
+[Response Format - Return PURE JSON only]:
+{{
+  "keyword": "Selected viral trending keyword",
+  "topic": "Breaking trend summary and specific angle tailored to our audience",
+  "title_candidate": "High-CTR viral headline capturing real-time traffic"
 }}
 """
 
