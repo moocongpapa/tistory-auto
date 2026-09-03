@@ -992,7 +992,7 @@
                     </div>
 
                     <div>
-                        <textarea id="importSessionJson" rows="6" placeholder='{"cookies": [{"name": "TSSESSION", ...}], "origins": [...]}' class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-mono text-[11px] text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none select-text"></textarea>
+                        <textarea id="importSessionJson" rows="7" placeholder='{"cookies": [{"name": "TSSESSION", ...}], "origins": [...]}' class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 font-mono text-[11px] text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none select-text">{% if session_info and session_info.session_json %}{{ session_info.session_json }}{% endif %}</textarea>
                         <div id="importAlert" class="hidden mt-2 p-2.5 rounded-xl text-xs font-medium"></div>
                     </div>
 
@@ -1800,6 +1800,13 @@
                         }
                     }
                 }
+
+                if (data.session_json) {
+                    const importArea = document.getElementById('importSessionJson');
+                    if (importArea && !importArea.value.trim()) {
+                        importArea.value = data.session_json;
+                    }
+                }
             } catch (e) {
                 console.debug('Session status fetch error:', e);
             }
@@ -2006,9 +2013,8 @@
 
                 if (data.success) {
                     alertBox.className = "mt-2 p-2.5 rounded-xl text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 block";
-                    alertBox.innerText = "🎉 " + data.message;
+                    alertBox.innerText = "🎉 " + data.message + " (서버 및 DB에 영구 보존 완료!)";
                     refreshSessionStatus();
-                    setTimeout(() => closeKakaoSessionModal(), 1500);
                 } else {
                     alertBox.className = "mt-2 p-2.5 rounded-xl text-xs font-medium bg-rose-50 text-rose-800 border border-rose-200 block";
                     alertBox.innerText = "❌ " + data.error;

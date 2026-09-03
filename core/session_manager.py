@@ -70,10 +70,16 @@ class ActiveQRSession:
 
     def _start_impl(self):
         try:
+            import base64
             self.p = sync_playwright().start()
             self.browser = self.p.chromium.launch(
                 headless=True,
-                args=["--disable-blink-features=AutomationControlled"]
+                args=[
+                    "--disable-blink-features=AutomationControlled",
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage"
+                ]
             )
             self.context = self.browser.new_context(
                 viewport={"width": 1280, "height": 850},
@@ -82,34 +88,68 @@ class ActiveQRSession:
             self.page = self.context.new_page()
 
             # Go to Tistory auth page
+            logger.info("티스토리 로그인 페이지 이동 중...")
             self.page.goto("https://www.tistory.com/auth/login", wait_until="domcontentloaded", timeout=45000)
-            time.sleep(2)
+            time.sleep(1)
 
-            # Click Kakao login button
-            kakao_btn = self.page.locator("a.link_kakao_id, .btn_login.link_kakao_id, a:has-text('카카오계정으로 로그인')").first
-            if kakao_btn.is_visible():
+            # Click Kakao login button with explicit wait
+            try:
+                kakao_btn = self.page.locator("a.link_kakao_id, .btn_login.link_kakao_id, a:has-text('카카오계정으로 로그인')").first
+                kakao_btn.wait_for(state="visible", timeout=15000)
                 kakao_btn.click()
-                time.sleep(3)
+            except Exception as ex:
+                logger.warning(f"카카오 버튼 대기 참고: {ex}")
 
-            # Click QR Code tab
-            qr_tab = self.page.locator("button:has-text('QR코드')").first
-            if qr_tab.is_visible():
+            # Wait for Kakao login domain
+            try:
+                self.page.wait_for_url(lambda u: "accounts.kakao.com" in u, timeout=15000)
+            except Exception:
+                pass
+
+            # Click QR Code tab with explicit wait
+            try:
+                qr_tab = self.page.locator("button:has-text('QR코드 로그인'), button:has-text('QR코드'), a:has-text('QR코드'), .btn_g:has-text('QR코드')").first
+                qr_tab.wait_for(state="visible", timeout=15000)
                 qr_tab.click()
-                time.sleep(2)
+            except Exception as ex:
+                logger.warning(f"QR 버튼 대기 참고: {ex}")
 
-            # Extract QR code data URL from canvas
+            # Wait for QR Canvas
+            canvas_loc = self.page.locator("canvas").first
+            try:
+                canvas_loc.wait_for(state="visible", timeout=15000)
+                time.sleep(1) # Allow drawing to settle
+            except Exception as ex:
+                logger.warning(f"QR Canvas 대기 참고: {ex}")
+
+            # Extract QR code data URL (Dual extraction: toDataURL + element screenshot fallback)
             qr_data = self.page.evaluate("""() => {
                 const canvas = document.querySelector('canvas');
-                return canvas ? canvas.toDataURL('image/png') : null;
+                if (canvas && canvas.width > 0 && canvas.height > 0) {
+                    return canvas.toDataURL('image/png');
+                }
+                const img = document.querySelector('img.img_qr, .box_qr img, .area_qr img');
+                if (img) return img.src;
+                return null;
             }""")
+
+            # Fallback to direct element screenshot if toDataURL returned empty
+            if not qr_data and canvas_loc.is_visible():
+                try:
+                    shot_bytes = canvas_loc.screenshot()
+                    if shot_bytes:
+                        qr_data = "data:image/png;base64," + base64.b64encode(shot_bytes).decode("utf-8")
+                        logger.info("스크린샷 캡처 방식으로 QR코드 이미지 추출 성공!")
+                except Exception as sc_err:
+                    logger.debug(f"QR 스크린샷 캡처 실패: {sc_err}")
 
             if qr_data:
                 self.qr_image = qr_data
                 self.status = "READY"
-                logger.info(f"QR 코드 세션 준비 완료: ID={self.session_id}")
+                logger.info(f"✅ 카카오 QR 코드 세션 준비 완료: ID={self.session_id}")
             else:
                 self.status = "FAILED"
-                self.error_message = "카카오 QR코드 이미지를 추출할 수 없습니다."
+                self.error_message = "카카오 QR코드 이미지를 추출할 수 없습니다. (페이지 렌더링 지연)"
         except Exception as e:
             logger.error(f"QR 세션 생성 오류: {e}")
             self.status = "FAILED"
@@ -199,8 +239,8 @@ class SessionManager:
 
     def get_session_info(self) -> Dict[str, Any]:
         """Check status of existing storage_state.json and auto-restore from DB if needed"""
-        if not os.path.exists(STORAGE_STATE_FILE):
-            # Check DB persistent storage
+        # 1. If file doesn't exist on disk or is empty, check DB persistent storage
+        if not os.path.exists(STORAGE_STATE_FILE) or os.path.getsize(STORAGE_STATE_FILE) == 0:
             try:
                 from core.database import DatabaseManager
                 saved_json = DatabaseManager().get_setting("session_storage_state")
@@ -212,13 +252,26 @@ class SessionManager:
             except Exception as e:
                 logger.debug(f"DB 세션 복원 시도 참고: {e}")
 
-        if not os.path.exists(STORAGE_STATE_FILE):
+        # 2. If still doesn't exist, check environment variable
+        if not os.path.exists(STORAGE_STATE_FILE) or os.path.getsize(STORAGE_STATE_FILE) == 0:
+            session_env = os.environ.get("SESSION_STORAGE_STATE", "").strip()
+            if session_env:
+                try:
+                    os.makedirs(SESSION_DIR, exist_ok=True)
+                    with open(STORAGE_STATE_FILE, "w", encoding="utf-8") as f:
+                        f.write(session_env)
+                    logger.info("환경변수로부터 카카오 인증 세션을 성공적으로 자동 복원했습니다.")
+                except Exception:
+                    pass
+
+        if not os.path.exists(STORAGE_STATE_FILE) or os.path.getsize(STORAGE_STATE_FILE) == 0:
             return {
                 "exists": False,
-                "status_text": "인증 세션 없음 (로그인 필요)",
+                "status_text": "인증 세션 없음 (로그인 또는 세션 등록 필요)",
                 "is_valid": False,
                 "last_modified": None,
-                "cookie_count": 0
+                "cookie_count": 0,
+                "session_json": ""
             }
 
         try:
@@ -226,19 +279,34 @@ class SessionManager:
             last_mod_str = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S")
 
             with open(STORAGE_STATE_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
+                raw_content = f.read().strip()
+                data = json.loads(raw_content)
 
             cookies = data.get("cookies", [])
             has_tistory = any("tistory.com" in c.get("domain", "") for c in cookies)
-            has_tssession = any(c.get("name") == "TSSESSION" for c in cookies)
+            has_kakao = any("kakao.com" in c.get("domain", "") for c in cookies)
+            has_auth = any(c.get("name") in ("TSSESSION", "TSID", "_kawlt", "_T_", "_T_SECURE", "TI_SESSION") for c in cookies)
+            is_valid = (has_tistory or has_kakao) and (has_auth or len(cookies) >= 3)
+
+            formatted_json = json.dumps(data, ensure_ascii=False, indent=2)
+
+            # Ensure DB is kept synchronized
+            try:
+                from core.database import DatabaseManager
+                db_inst = DatabaseManager()
+                if not db_inst.get_setting("session_storage_state"):
+                    db_inst.set_setting("session_storage_state", formatted_json)
+            except Exception:
+                pass
 
             return {
                 "exists": True,
-                "is_valid": has_tistory and has_tssession,
-                "status_text": "세션 정상 가동 중" if (has_tistory and has_tssession) else "세션 파일 있음 (확인 권장)",
+                "is_valid": is_valid,
+                "status_text": "세션 정상 가동 중 (인증 완료)" if is_valid else "세션 파일 등록됨",
                 "last_modified": last_mod_str,
                 "cookie_count": len(cookies),
-                "has_tssession": has_tssession
+                "has_tssession": any(c.get("name") == "TSSESSION" for c in cookies),
+                "session_json": formatted_json
             }
         except Exception as e:
             return {
@@ -246,7 +314,8 @@ class SessionManager:
                 "status_text": f"세션 파일 읽기 오류: {e}",
                 "is_valid": False,
                 "last_modified": None,
-                "cookie_count": 0
+                "cookie_count": 0,
+                "session_json": ""
             }
 
     def start_qr_session(self) -> Dict[str, Any]:
