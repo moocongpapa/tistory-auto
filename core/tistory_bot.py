@@ -165,7 +165,12 @@ class TistoryBot:
                     logger.info(f"⏳ 스마트폰 카카오 2단계 인증 승인 대기 중... (남은 시간: {rem}초)")
 
         curr_url = page.url
-        is_valid = ("tistory.com" in curr_url) and ("/auth/login" not in curr_url) and ("accounts.kakao.com" not in curr_url)
+        curr_cookies = page.context.cookies()
+        has_tistory_session = any(
+            c.get("name") in ("TSSESSION", "TSID", "_T_", "_T_SECURE") 
+            for c in curr_cookies if "tistory.com" in c.get("domain", "")
+        )
+        is_valid = has_tistory_session and ("tistory.com" in curr_url) and ("/auth/login" not in curr_url) and ("accounts.kakao.com" not in curr_url)
 
         if is_valid:
             logger.info("카카오 로그인 및 티스토리 복귀 완료!")

@@ -49,15 +49,30 @@ def main():
         # Sync blog state
         try:
             page.goto('https://www.tistory.com/member/blog', wait_until='domcontentloaded', timeout=15000)
-            time.sleep(2)
+            time.sleep(1.5)
         except Exception:
             pass
+
+        # Sync all registered blogs' subdomain cookies
+        try:
+            cfg_path = os.path.join(BASE_DIR, 'config.json')
+            if os.path.exists(cfg_path):
+                with open(cfg_path, 'r', encoding='utf-8') as cf:
+                    cfg = json.load(cf)
+                for b in cfg.get('blogs', []):
+                    sub = b.get('subdomain')
+                    if sub:
+                        print(f">> 블로그 [{sub}] 인증 쿠키 동기화 중...")
+                        page.goto(f"https://{sub}.tistory.com/manage", wait_until='domcontentloaded', timeout=15000)
+                        time.sleep(1.5)
+        except Exception as e:
+            print(f">> 블로그 동기화 참고: {e}")
 
         # Save storage state
         context.storage_state(path=STATE_FILE)
         browser.close()
 
-    # Read state json as one-line string
+    # Read state json as formatted string
     with open(STATE_FILE, 'r', encoding='utf-8') as f:
         data = json.load(f)
     
@@ -74,17 +89,16 @@ def main():
 
     print()
     print('=' * 65)
-    print(' 🎉 카카오 로그인 인증 세션 추출 완료!')
+    print(' 🎉 티스토리 & 카카오 로그인 인증 세션 추출 완료!')
     print('=' * 65)
     if copied:
         print(' 📋 [맥북 클립보드에 자동 복사되었습니다! (Cmd + V로 바로 붙여넣기 가능)]')
     print()
-    print('[Render 등록 가이드]')
-    print(' 1. Render 대시보드 (https://dashboard.render.com) -> tistory-auto -> Environment 접속')
-    print(' 2. Add Environment Variable 클릭')
-    print('    - Key: SESSION_STORAGE_STATE')
-    print('    - Value: 아래 세션 텍스트 전체 붙여넣기')
-    print(' 3. Save Changes 클릭!')
+    print('[초간편 적용 방법 - 1초 완성]')
+    print(' 1. 웹 대시보드 접속 -> 상단 [카카오 세션 연동] 클릭')
+    print(' 2. [📋 세션 붙여넣기] 탭 클릭')
+    print(' 3. 입력창에서 [Cmd + V]로 붙여넣고 [세션 즉시 저장 및 적용] 클릭!')
+    print('    (클라우드 DB에 자동 영구 보존되어 재부팅되어도 유지됩니다)')
     print('=' * 65)
     print()
     print('--- [SESSION_STORAGE_STATE 값 시작] ---')
