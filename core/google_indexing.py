@@ -21,21 +21,29 @@ class GoogleIndexingManager:
         self.key_path = key_path
 
     def is_configured(self) -> bool:
-        return os.path.exists(self.key_path)
+        return os.path.exists(self.key_path) or bool(os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip())
 
     def request_indexing(self, url: str, action: str = "URL_UPDATED") -> Dict[str, Any]:
         """Submit URL to Google Indexing API."""
         if not self.is_configured():
-            logger.info("Google Service Account 키(service_account.json)가 없어 빠른 색인 요청을 건너뜁니다.")
+            logger.info("Google Service Account 키(service_account.json 또는 GOOGLE_SERVICE_ACCOUNT_JSON)가 없어 빠른 색인 요청을 건너뜁니다. (글 정상 발행에는 영향 없음)")
             return {"status": "SKIPPED", "message": "service_account.json not found"}
 
         try:
             from google.oauth2 import service_account
             from googleapiclient.discovery import build
 
-            credentials = service_account.Credentials.from_service_account_file(
-                self.key_path, scopes=SCOPES
-            )
+            env_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
+            if env_json:
+                account_info = json.loads(env_json)
+                credentials = service_account.Credentials.from_service_account_info(
+                    account_info, scopes=SCOPES
+                )
+            else:
+                credentials = service_account.Credentials.from_service_account_file(
+                    self.key_path, scopes=SCOPES
+                )
+
             service = build("indexing", "v3", credentials=credentials)
 
             body = {
