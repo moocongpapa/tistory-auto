@@ -313,7 +313,14 @@ class TistoryBot:
             # 2. Step 2: Navigate to New Post Editor
             editor_url = f"https://{subdomain}.tistory.com/manage/newpost/"
             logger.info(f"티스토리 에디터 이동: {editor_url}")
-            page.goto(editor_url, wait_until="domcontentloaded", timeout=45000)
+            try:
+                page.goto(editor_url, wait_until="domcontentloaded", timeout=45000)
+            except Exception as e:
+                logger.warning(f"에디터 페이지 1차 이동 지연: {e}. 재시도 중...")
+                try:
+                    page.goto(editor_url, wait_until="domcontentloaded", timeout=45000)
+                except Exception as e2:
+                    logger.warning(f"에디터 페이지 2차 이동 참고: {e2}")
             time.sleep(2.5)
 
             # Check if login redirected again
@@ -322,7 +329,10 @@ class TistoryBot:
                 logger.info("에디터 이동 중 로그인 필요 상태 감지. 카카오 인증 재시도...")
                 logged_in = self._perform_kakao_login(page, target_return_url=editor_url)
                 if logged_in:
-                    page.goto(editor_url, wait_until="domcontentloaded", timeout=30000)
+                    try:
+                        page.goto(editor_url, wait_until="domcontentloaded", timeout=30000)
+                    except Exception as e3:
+                        logger.warning(f"에디터 재진입 참고: {e3}")
                     time.sleep(2.5)
 
             # Final check before interacting with editor
@@ -700,7 +710,10 @@ class TistoryBot:
                     # Search for the newly created post with retry (handling server indexing delay)
                     for attempt in range(4):
                         if "/manage/posts" not in page.url or attempt > 0:
-                            page.goto(manage_posts_url, wait_until="domcontentloaded", timeout=20000)
+                            try:
+                                page.goto(manage_posts_url, wait_until="domcontentloaded", timeout=15000)
+                            except Exception as nav_err:
+                                logger.warning(f"관리자 글 목록 페이지 이동 참고 (시도 {attempt+1}/4): {nav_err}")
                         time.sleep(2)
 
                         exact_post_url = page.evaluate("""(targetTitle) => {
