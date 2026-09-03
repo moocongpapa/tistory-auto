@@ -146,12 +146,12 @@ class GeminiClient:
             except Exception as e:
                 err_msg = str(e)
                 last_error = e
-                if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg or "Quota exceeded" in err_msg:
-                    logger.warning(f"모델 [{model_name}] 429 쿼터 초과 발생. 다음 폴백 모델로 자동 전환합니다...")
+                if any(kw in err_msg for kw in ["429", "RESOURCE_EXHAUSTED", "Quota exceeded", "503", "UNAVAILABLE", "high demand", "overloaded"]):
+                    logger.warning(f"모델 [{model_name}] 트래픽 폭주/쿼터 초과/503 감지 ({err_msg[:60]}...). 다음 폴백 모델로 자동 전환합니다...")
                     time.sleep(1)
                     continue
                 else:
-                    logger.error(f"모델 [{model_name}] 호출 중 예외 발생: {e}")
+                    logger.warning(f"모델 [{model_name}] 호출 중 예외 ({err_msg[:60]}...). 안전 폴백 모델로 전환합니다...")
                     time.sleep(1)
                     continue
 
