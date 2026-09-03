@@ -820,6 +820,15 @@
             </div>
         </div>
 
+        <!-- Mobile Bottom Pull-to-Refresh & Scroll-to-Bottom Refresh Trigger -->
+        <div id="bottomRefreshContainer" class="w-full flex flex-col items-center justify-center py-8 pb-16 transition-all duration-200 select-none">
+            <div id="bottomRefreshBadge" onclick="triggerBottomRefresh()" class="flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-white border border-slate-200/90 shadow-md text-xs font-bold text-slate-700 transition-all cursor-pointer hover:bg-slate-50 hover:shadow-lg active:scale-95">
+                <i id="bottomRefreshIcon" class="fa-solid fa-arrow-up text-indigo-600 text-sm transition-transform duration-200"></i>
+                <span id="bottomRefreshText">위로 당기거나 터치하면 새로고침</span>
+            </div>
+            <p id="bottomRefreshSubtext" class="text-[11px] text-slate-400 mt-2 font-medium">모바일 화면 맨 아래에서 위로 살짝 당기면 최신 데이터로 새로고침됩니다</p>
+        </div>
+
         <!-- Kakao & Tistory Session Management Modal -->
         <div id="kakaoSessionModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
             <div class="relative bg-white border border-slate-200/90 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
@@ -2174,6 +2183,98 @@
                 btn.disabled = false;
             }
         }
+
+        // Mobile Bottom Pull-To-Refresh Implementation
+        let isAtBottom = false;
+        let touchStartY = 0;
+        let pullDist = 0;
+        let isRefreshing = false;
+        const PULL_THRESHOLD = 50;
+
+        function triggerBottomRefresh() {
+            if (isRefreshing) return;
+            isRefreshing = true;
+            const badge = document.getElementById('bottomRefreshBadge');
+            const icon = document.getElementById('bottomRefreshIcon');
+            const text = document.getElementById('bottomRefreshText');
+
+            if (badge) badge.className = "flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-indigo-50 border border-indigo-200 shadow-md text-xs font-bold text-indigo-700 scale-105 transition-all";
+            if (icon) icon.className = "fa-solid fa-rotate fa-spin text-indigo-600 text-sm";
+            if (text) text.innerText = "최신 데이터 새로고침 중…";
+
+            if (navigator.vibrate) {
+                try { navigator.vibrate(20); } catch(e) {}
+            }
+
+            setTimeout(() => {
+                location.reload();
+            }, 300);
+        }
+
+        window.addEventListener('scroll', () => {
+            const scrollPos = window.innerHeight + window.scrollY;
+            const totalHeight = document.documentElement.scrollHeight;
+            isAtBottom = (scrollPos >= totalHeight - 20);
+        }, { passive: true });
+
+        window.addEventListener('touchstart', (e) => {
+            if (isRefreshing) return;
+            const scrollPos = window.innerHeight + window.scrollY;
+            const totalHeight = document.documentElement.scrollHeight;
+            if (scrollPos >= totalHeight - 30) {
+                isAtBottom = true;
+                touchStartY = e.touches[0].clientY;
+                pullDist = 0;
+            } else {
+                isAtBottom = false;
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isAtBottom || isRefreshing) return;
+            const currentY = e.touches[0].clientY;
+            const deltaY = touchStartY - currentY; // positive when dragging finger UP
+
+            if (deltaY > 5) {
+                pullDist = Math.min(deltaY * 0.55, 80);
+                const badge = document.getElementById('bottomRefreshBadge');
+                const icon = document.getElementById('bottomRefreshIcon');
+                const text = document.getElementById('bottomRefreshText');
+
+                if (badge) {
+                    badge.style.transform = `translateY(-${Math.min(pullDist, 25)}px)`;
+                }
+
+                if (pullDist >= PULL_THRESHOLD) {
+                    if (badge) badge.className = "flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-indigo-600 border border-indigo-700 shadow-lg text-xs font-extrabold text-white transition-all scale-105";
+                    if (icon) icon.className = "fa-solid fa-rotate text-white text-sm rotate-180 transition-transform duration-200";
+                    if (text) text.innerText = "손을 놓으면 새로고침!";
+                } else {
+                    if (badge) badge.className = "flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-indigo-50 border border-indigo-200 shadow-md text-xs font-bold text-indigo-700 transition-all";
+                    if (icon) icon.className = "fa-solid fa-arrow-up text-indigo-600 text-sm transition-transform duration-200";
+                    if (text) text.innerText = "위로 더 당기면 새로고침";
+                }
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchend', () => {
+            if (!isAtBottom || isRefreshing) return;
+            const badge = document.getElementById('bottomRefreshBadge');
+            if (pullDist >= PULL_THRESHOLD) {
+                triggerBottomRefresh();
+            } else {
+                if (badge) {
+                    badge.style.transform = '';
+                    badge.className = "flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-white border border-slate-200/90 shadow-md text-xs font-bold text-slate-700 transition-all";
+                }
+                const icon = document.getElementById('bottomRefreshIcon');
+                const text = document.getElementById('bottomRefreshText');
+                if (icon) icon.className = "fa-solid fa-arrow-up text-indigo-600 text-sm transition-transform duration-200";
+                if (text) text.innerText = "위로 당기거나 터치하면 새로고침";
+            }
+            pullDist = 0;
+            isAtBottom = false;
+        }, { passive: true });
 
         // Init on DOM Load
         document.addEventListener('DOMContentLoaded', () => {
