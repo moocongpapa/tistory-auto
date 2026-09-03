@@ -32,7 +32,11 @@ class GoogleIndexingManager:
         try:
             from google.oauth2 import service_account
             from googleapiclient.discovery import build
+        except ImportError:
+            logger.info("googleapiclient 패키지가 설치되지 않아 빠른 색인(Indexing API)을 건너뜁니다. (글 정상 발행에는 영향 없음)")
+            return {"status": "SKIPPED", "message": "googleapiclient not installed"}
 
+        try:
             env_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
             if env_json:
                 account_info = json.loads(env_json)
@@ -55,5 +59,5 @@ class GoogleIndexingManager:
             logger.info(f"Google Indexing API 요청 성공: {url} (응답: {response})")
             return {"status": "SUCCESS", "response": response}
         except Exception as e:
-            logger.warning(f"Google Indexing API 요청 실패: {e}")
+            logger.warning(f"Google Indexing API 요청 참고: {e}")
             return {"status": "ERROR", "error": str(e)}
