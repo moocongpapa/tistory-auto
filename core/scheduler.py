@@ -388,11 +388,38 @@ class MultiBlogScheduler:
         )
         logger.info("Registered 5-minute Keep-Alive Heartbeat job for Render sleep prevention.")
 
+        # Add 30-minute Session Keep-Alive & Auto-Renewal Safety Job
+        self.scheduler.add_job(
+            self.session_keep_alive_job,
+            trigger=IntervalTrigger(minutes=30, timezone=KST),
+            id="session_keep_alive",
+            name="[세션 안전장치] 30분 주기 세션 수명 무한 연장",
+            replace_existing=True
+        )
+        logger.info("Registered 30-minute Session Keep-Alive Safety job for perpetual session preservation.")
+
+    def session_keep_alive_job(self):
+        """Keep Tistory/Kakao session perpetually active to prevent session expiration."""
+        try:
+            with self._pipeline_lock:
+                if self._active_blogs:
+                    logger.debug("포스팅 작업 진행 중이므로 세션 킵얼라이브를 다음 주기로 건너뜁니다.")
+                    return
+
+            from core.session_manager import session_manager
+            res = session_manager.keep_alive_session()
+            if res.get("renewed"):
+                logger.info(f"🛡️ [세션 안전장치] {res.get('message')}")
+            elif res.get("warning"):
+                logger.warning(f"⚠️ [세션 안전장치 점검] {res.get('message')}")
+        except Exception as e:
+            logger.debug(f"세션 킵얼라이브 점검 참고: {e}")
+
     def get_scheduled_jobs_info(self, include_internal: bool = False) -> List[Dict[str, Any]]:
         jobs = []
         for job in self.scheduler.get_jobs():
-            # If include_internal is False, hide internal keep_alive_ping for clean dashboard metric
-            if not include_internal and job.id == "keep_alive_ping":
+            # If include_internal is False, hide internal background maintenance jobs
+            if not include_internal and job.id in ("keep_alive_ping", "session_keep_alive"):
                 continue
 
             nrt = getattr(job, "next_run_time", None)

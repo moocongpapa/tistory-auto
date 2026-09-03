@@ -352,6 +352,10 @@ async def confirm_2fa_api():
 async def import_session_api(req: ImportSessionRequest):
     return session_manager.import_session_json(req.session_json)
 
+@app.post("/api/session/keep-alive")
+async def session_keep_alive_api():
+    return await asyncio.to_thread(session_manager.keep_alive_session)
+
 @app.get("/guide", response_class=HTMLResponse)
 async def guide_page(request: Request):
     blogs = scheduler_runner.config.get("blogs", [])

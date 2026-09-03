@@ -862,9 +862,24 @@
                             </span>
                         </div>
                     </div>
-                    <button type="button" onclick="refreshSessionStatus()" class="text-[11px] font-bold bg-white border border-slate-200 px-2.5 py-1 rounded-lg hover:bg-slate-50 transition shadow-2xs cursor-pointer">
-                        상태 갱신
-                    </button>
+                    <div class="flex items-center space-x-1.5">
+                        <button type="button" id="sessionKeepAliveBtn" onclick="runSessionKeepAlive()" class="text-[11px] font-bold bg-white hover:bg-slate-50 text-indigo-700 border border-slate-200 px-2.5 py-1 rounded-lg transition shadow-2xs cursor-pointer flex items-center space-x-1" title="티스토리 서버와 통신하여 세션 수명을 즉시 연장합니다">
+                            <i id="sessionKeepAliveIcon" class="fa-solid fa-shield-halved text-indigo-500"></i>
+                            <span>수명 즉시 연장</span>
+                        </button>
+                        <button type="button" onclick="refreshSessionStatus()" class="text-[11px] font-bold bg-white border border-slate-200 px-2.5 py-1 rounded-lg hover:bg-slate-50 transition shadow-2xs cursor-pointer">
+                            상태 갱신
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Session Protection Info Banner -->
+                <div class="flex items-center justify-between px-3.5 py-2 bg-slate-50 border border-slate-200/80 rounded-xl text-[11px] text-slate-500">
+                    <span class="flex items-center space-x-1.5 font-medium">
+                        <i class="fa-solid fa-clock-rotate-left text-emerald-600"></i>
+                        <span><b>세션 이탈 방지 안전장치 가동 중:</b> 30분 주기 백그라운드 자동 수명 연장</span>
+                    </span>
+                    <span class="text-emerald-700 font-extrabold bg-emerald-100/80 px-2 py-0.2 rounded-md">24/7 무인 유지</span>
                 </div>
 
                 <!-- Method Switcher Tabs -->
@@ -1964,6 +1979,30 @@
                 }
             } catch (e) {
                 console.debug('Session status fetch error:', e);
+            }
+        }
+
+        async function runSessionKeepAlive() {
+            const btn = document.getElementById('sessionKeepAliveBtn');
+            const icon = document.getElementById('sessionKeepAliveIcon');
+            if (btn) btn.disabled = true;
+            if (icon) icon.className = "fa-solid fa-spinner fa-spin text-indigo-500";
+
+            try {
+                const res = await fetch('/api/session/keep-alive', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    alert('🛡️ ' + data.message);
+                    refreshSessionStatus();
+                } else {
+                    alert('⚠️ ' + (data.message || data.error || '세션 갱신 실패'));
+                    refreshSessionStatus();
+                }
+            } catch (e) {
+                alert('통신 오류: ' + e.message);
+            } finally {
+                if (btn) btn.disabled = false;
+                if (icon) icon.className = "fa-solid fa-shield-halved text-indigo-500";
             }
         }
 

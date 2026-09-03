@@ -17,6 +17,7 @@ import threading
 from typing import Dict, Any, Optional
 from datetime import datetime
 from playwright.sync_api import sync_playwright
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -629,6 +630,114 @@ class SessionManager:
             }
         except Exception as e:
             return {"success": False, "error": f"JSON 파싱 실패: {e}"}
+
+    def keep_alive_session(self) -> Dict[str, Any]:
+        """
+        Safety mechanism to extend session lifespan and prevent logout.
+        1. Sends keep-alive request to Tistory to trigger sliding session extension.
+        2. Captures any updated Set-Cookie headers from Tistory.
+        3. If expired, attempts background silent OAuth re-authorization using long-term tokens.
+        4. Persists renewed session to disk and Supabase DB.
+        """
+        if not os.path.exists(STORAGE_STATE_FILE) or os.path.getsize(STORAGE_STATE_FILE) == 0:
+            self.get_session_info()
+
+        if not os.path.exists(STORAGE_STATE_FILE) or os.path.getsize(STORAGE_STATE_FILE) == 0:
+            return {"success": False, "message": "저장된 세션이 없습니다."}
+
+        try:
+            with open(STORAGE_STATE_FILE, "r", encoding="utf-8") as f:
+                state_data = json.load(f)
+
+            cookies = state_data.get("cookies", [])
+            if not cookies:
+                return {"success": False, "message": "세션 쿠키가 비어 있습니다."}
+
+            req_session = requests.Session()
+            req_session.headers.update({
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+            })
+            for c in cookies:
+                domain = c.get("domain", "").lstrip(".")
+                req_session.cookies.set(c["name"], c["value"], domain=domain)
+
+            # Ping Tistory member/blog with existing cookies
+            resp = req_session.get("https://www.tistory.com/member/blog", allow_redirects=False, timeout=12)
+            
+            # Check if any new/updated cookies were returned by Tistory
+            new_cookies_set = False
+            for rc in req_session.cookies:
+                for sc in cookies:
+                    if sc.get("name") == rc.name and rc.value:
+                        if sc.get("value") != rc.value:
+                            sc["value"] = rc.value
+                            new_cookies_set = True
+
+            loc = resp.headers.get("Location", "")
+            is_active = (resp.status_code == 200) or (resp.status_code == 302 and "/auth/login" not in loc and "accounts.kakao.com" not in loc)
+
+            if is_active:
+                if new_cookies_set:
+                    state_data["cookies"] = cookies
+                clean_json = json.dumps(state_data, ensure_ascii=False, indent=2)
+                with open(STORAGE_STATE_FILE, "w", encoding="utf-8") as f:
+                    f.write(clean_json)
+
+                try:
+                    from core.database import DatabaseManager
+                    DatabaseManager().set_setting("session_storage_state", clean_json)
+                except Exception as db_err:
+                    logger.debug(f"세션 DB 갱신 동기화: {db_err}")
+
+                logger.info("🛡️ [세션 안전장치] 티스토리 세션 수명 킵얼라이브 완료 (정상 유지 중)")
+                return {
+                    "success": True,
+                    "renewed": True,
+                    "message": "티스토리 세션 수명이 성공적으로 연장되었습니다!"
+                }
+            else:
+                logger.info("🛡️ [세션 안전장치] 티스토리 세션 갱신 필요 감지 -> 백그라운드 자동 무인 갱신 시도...")
+                return self._attempt_silent_renewal()
+        except Exception as e:
+            logger.debug(f"세션 킵얼라이브 실행 참고: {e}")
+            return {"success": False, "error": str(e)}
+
+    def _attempt_silent_renewal(self) -> Dict[str, Any]:
+        """Attempt background re-authentication via Playwright using Kakao long-term token"""
+        def _worker():
+            try:
+                with sync_playwright() as p:
+                    browser = p.chromium.launch(headless=True, args=["--disable-blink-features=AutomationControlled"])
+                    context = browser.new_context(
+                        storage_state=STORAGE_STATE_FILE if os.path.exists(STORAGE_STATE_FILE) else None,
+                        user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+                    )
+                    page = context.new_page()
+                    oauth_url = "https://kauth.kakao.com/oauth/authorize?client_id=3e6ddd834b023f24221217e370daed18&redirect_uri=https%3A%2F%2Fwww.tistory.com%2Fauth%2Fkakao%2Fredirect&response_type=code"
+                    try:
+                        page.goto(oauth_url, wait_until="domcontentloaded", timeout=25000)
+                        time.sleep(3)
+                        curr_url = page.url
+                        if ("tistory.com" in curr_url) and ("/auth/login" not in curr_url) and ("accounts.kakao.com" not in curr_url):
+                            context.storage_state(path=STORAGE_STATE_FILE)
+                            with open(STORAGE_STATE_FILE, "r", encoding="utf-8") as sf:
+                                new_json = sf.read()
+                            from core.database import DatabaseManager
+                            DatabaseManager().set_setting("session_storage_state", new_json)
+                            logger.info("🎉 [세션 안전장치] 카카오 백그라운드 무인 세션 자동 갱신 성공!")
+                            return {"success": True, "renewed": True, "message": "카카오 장기 토큰을 통해 세션이 무인으로 자동 갱신되었습니다!"}
+                    finally:
+                        context.close()
+                        browser.close()
+            except Exception as e:
+                logger.debug(f"무인 세션 복구 시도 참고: {e}")
+            return {
+                "success": False,
+                "warning": True,
+                "message": "카카오 세션이 만료되었습니다. 웹 대시보드 [카카오 세션 연동]에서 세션을 갱신해주세요."
+            }
+
+        return run_in_isolated_thread(_worker)
 
     def _cleanup_expired(self):
         with self._cleanup_lock:
