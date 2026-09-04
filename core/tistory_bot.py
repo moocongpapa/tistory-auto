@@ -707,31 +707,32 @@ class TistoryBot:
 
             time.sleep(0.6)
 
-            # 8-3. Click final '발행' submit button (Guaranteed Form Submission)
-            logger.info(f"최종 '{'비공개 저장' if is_draft else '공개발행'}' 전송 트리거 실행 중...")
-            page.evaluate("""() => {
-                const btn = document.querySelector('#publish-btn');
-                const form = btn ? btn.form || document.querySelector('form') : document.querySelector('form');
-                if (btn) {
-                    btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-                    btn.click();
-                }
-                if (form && typeof form.requestSubmit === 'function') {
-                    try { form.requestSubmit(btn); } catch(e) {}
-                }
-            }""")
-
+            # 8-3. Click final '발행' submit button (Single, Debounced Click to Prevent Duplicate Posts)
+            logger.info(f"최종 '{'비공개 저장' if is_draft else '공개발행'}' 전송 트리거 실행 중 (단일 1회 클릭)...")
             try:
                 final_btn = page.locator("#publish-btn").first
-                if final_btn.is_visible():
-                    final_btn.click(timeout=3000, force=True)
-            except Exception:
-                pass
+                if final_btn.is_visible(timeout=5000):
+                    final_btn.click(timeout=5000)
+                else:
+                    page.evaluate("""() => {
+                        const btn = document.querySelector('#publish-btn');
+                        if (btn && !btn.disabled) {
+                            btn.click();
+                        }
+                    }""")
+            except Exception as e:
+                logger.warning(f"발행 버튼 1차 클릭 예외 ({e}), JS 폴백 1회 실행...")
+                page.evaluate("""() => {
+                    const btn = document.querySelector('#publish-btn');
+                    if (btn && !btn.disabled) {
+                        btn.click();
+                    }
+                }""")
 
-            # 8-4. Wait for server response and redirection (CRITICAL)
-            logger.info("티스토리 서버 발행 완료 및 페이지 리디렉션 대기 중 (최대 20초)...")
+            # 8-4. Wait for server response and redirection (Do NOT re-click while server processes)
+            logger.info("티스토리 서버 발행 완료 및 페이지 리디렉션 대기 중 (최대 25초)...")
             final_url = None
-            for sec in range(20):
+            for sec in range(25):
                 time.sleep(1)
                 curr_url = page.url
                 # Check if redirected away from newpost editor to live post or manage page
@@ -739,14 +740,6 @@ class TistoryBot:
                     final_url = curr_url
                     logger.info(f"발행 완료 감지 ({sec+1}초 소요): {final_url}")
                     break
-
-                # If still on editor after 5 seconds, retry clicking publish button once more
-                if sec == 6:
-                    logger.info("발행 진행 중 재확인: 최종 발행 버튼 재클릭 실행...")
-                    page.evaluate("""() => {
-                        const btn = document.querySelector('#publish-btn');
-                        if (btn) btn.click();
-                    }""")
 
             # 8-5. Ensure Exact Individual Post URL (e.g. https://domain.tistory.com/123) is Captured
             if not final_url or "/manage" in final_url or not re.search(r"tistory\.com/(\d+|entry/[^/]+)/?$", final_url):
