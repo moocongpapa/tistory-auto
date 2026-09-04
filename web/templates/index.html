@@ -848,8 +848,9 @@
         </div>
 
         <!-- Kakao & Tistory Session Management Modal -->
-        <div id="kakaoSessionModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div class="relative bg-white border border-slate-200/90 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+        <div id="kakaoSessionModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm overscroll-contain">
+            <div class="min-h-full flex items-start sm:items-center justify-center p-3 sm:p-6 text-slate-900">
+                <div class="relative bg-white border border-slate-200/90 rounded-3xl max-w-xl w-full p-5 sm:p-7 shadow-2xl space-y-4 sm:space-y-5 my-3 sm:my-8 animate-in fade-in zoom-in-95 duration-200">
                 
                 <!-- Modal Header -->
                 <div class="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -1095,6 +1096,7 @@
                     </div>
                 </div>
 
+            </div>
             </div>
         </div>
 
@@ -1901,7 +1903,11 @@
         // Kakao Session Modal Controller
         function openKakaoSessionModal() {
             const modal = document.getElementById('kakaoSessionModal');
-            if (modal) modal.classList.remove('hidden');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.scrollTop = 0;
+            }
+            document.body.classList.add('overflow-hidden');
             switchKakaoTab('qr');
             refreshSessionStatus();
         }
@@ -1909,6 +1915,7 @@
         function closeKakaoSessionModal() {
             const modal = document.getElementById('kakaoSessionModal');
             if (modal) modal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
             if (qrPollInterval) clearInterval(qrPollInterval);
             if (qrCountdownInterval) clearInterval(qrCountdownInterval);
         }
