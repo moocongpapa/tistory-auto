@@ -247,6 +247,20 @@ async def get_latest_post_event(last_id: int = 0):
         }
     return {"has_new": False}
 
+@app.get("/api/notifications/status")
+async def get_notification_status():
+    t_token, t_chat = scheduler_runner.notifier.get_telegram_creds()
+    d_url = scheduler_runner.notifier.get_discord_webhook()
+    return {
+        "telegram_configured": bool(t_token and t_chat),
+        "discord_configured": bool(d_url)
+    }
+
+@app.post("/api/notifications/test")
+async def trigger_test_notification():
+    result = scheduler_runner.notifier.send_test_message()
+    return result
+
 class TriggerPostRequest(BaseModel):
     blog_id: str = "blog_1"
     is_draft: bool = False

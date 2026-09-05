@@ -42,8 +42,8 @@ self.addEventListener('push', (event) => {
     const title = data.title || '🎉 새 글 발행 완료!';
     const options = {
         body: data.body || '새로운 포스팅이 성공적으로 등록되었습니다.',
-        icon: data.icon || '/assets/smartwork/smartwork_icon.png',
-        badge: '/assets/smartwork/smartwork_icon.png',
+        icon: data.icon || '/static/app_icon.png',
+        badge: '/static/app_icon.png',
         data: {
             url: data.url || '/'
         },

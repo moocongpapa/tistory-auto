@@ -27,6 +27,7 @@ from core.adsense import AdSenseManager
 from core.coupang_partners import CoupangPartnersManager
 from core.google_indexing import GoogleIndexingManager
 from core.internal_linker import InternalLinker
+from core.notifier import NotificationManager
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class MultiBlogScheduler:
         self.thumbnail_gen = ThumbnailGenerator()
         self.trend_collector = TrendCollector()
         self.internal_linker = InternalLinker(self.db)
+        self.notifier = NotificationManager(self.config)
         headless = self.config.get("publishing", {}).get("headless", True)
         self.bot = TistoryBot(headless=headless)
         self.use_background = use_background
@@ -322,6 +324,20 @@ class MultiBlogScheduler:
                 indexing_mgr = GoogleIndexingManager()
                 indexing_mgr.request_indexing(final_url)
 
+            # 10. Multi-Channel Instant Push Notification (Telegram / Discord)
+            try:
+                self.notifier.send_post_notification(
+                    blog_name=blog_info.get("name", blog_id),
+                    title=title,
+                    category=theme_name,
+                    url=final_url or f"https://{blog_info.get('subdomain', '')}.tistory.com",
+                    word_count=len(content_html),
+                    is_draft=(final_status != "PUBLISHED"),
+                    is_hot_issue=is_hot_issue
+                )
+            except Exception as e:
+                logger.debug(f"푸시 알림 발송 참고: {e}")
+
             logger.info(f"Successfully completed! DB Post ID: {post_id}, URL: {final_url}")
             return {
                 "success": True,
@@ -370,6 +386,18 @@ class MultiBlogScheduler:
                     message=human_msg,
                     url=None
                 )
+
+            # Send Failure Alert via Telegram/Discord if critical
+            try:
+                if level == "ERROR" and ("로그인" in human_msg or "2단계" in human_msg):
+                    self.notifier.send_error_notification(
+                        blog_name=blog_name,
+                        title=fail_title,
+                        error_msg=human_msg
+                    )
+            except Exception:
+                pass
+
             return {"success": False, "error": err_msg}
 
     def ping_self(self):
